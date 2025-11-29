@@ -13,6 +13,8 @@
     .selected { background: yellow; }
     #status { font-size: 18px; margin: 10px; }
     #players { margin: 10px; }
+    #table { background: #228B22; padding: 20px; margin: 20px; border-radius: 10px; min-height: 50px; font-size: 24px; }
+    .played-card { font-size: 32px; margin: 10px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -25,6 +27,7 @@
   <div id="gameArea" style="display: none;">
     <div id="status">Đang chờ người chơi...</div>
     <div id="players"></div>
+    <div id="table">Bàn bài</div>
     <div id="hand"></div>
   </div>
 
@@ -33,8 +36,10 @@
     const socket = io();
     let hand = [];
     let roomId = '';
-    let isMyTurn = false;
+    let myIndex = -1;
+    let currentTurn = -1;
     let players = [];
+    let playedCards = [];
 
     function joinRoom() {
       roomId = document.getElementById('roomId').value || '123';
@@ -46,6 +51,7 @@
 
     socket.on('joinedRoom', (data) => {
       if (data.success) {
+        myIndex = data.playerIndex;
         document.getElementById('status').innerText = `Tham gia thành công! Số người: ${data.players}`;
         document.getElementById('gameArea').style.display = 'block';
       } else {
@@ -60,17 +66,29 @@
 
     socket.on('gameStarted', (data) => {
       hand = data.myHand;
-      isMyTurn = data.currentTurn === 0; // Giả sử player 1 bắt đầu
+      myIndex = data.myIndex;
+      currentTurn = data.currentTurn;
       players = data.players;
       displayPlayers();
       displayHand();
-      document.getElementById('status').innerText = `Game bắt đầu! Lượt ${players[data.currentTurn] || 'bạn'}`;
+      updateTurnStatus();
     });
 
     socket.on('cardPlayed', (data) => {
-      isMyTurn = data.currentTurn === 0; // Update lượt
-      document.getElementById('status').innerText = `Bài được đánh! Lượt ${players[data.currentTurn] || 'bạn'}`;
+      playedCards.push(data.card);
+      currentTurn = data.currentTurn;
+      updateTable();
+      updateTurnStatus();
     });
+
+    function updateTurnStatus() {
+      const turnPlayer = players[currentTurn] || 'bạn';
+      document.getElementById('status').innerText = `Lượt ${turnPlayer}`;
+    }
+
+    function displayPlayers() {
+      document.getElementById('players').innerHTML = players.map((name, index) => `<p>${index + 1}. ${name}</p>`).join('');
+    }
 
     function displayHand() {
       const div = document.getElementById('hand');
@@ -84,12 +102,13 @@
       });
     }
 
-    function displayPlayers() {
-      document.getElementById('players').innerHTML = players.map((name, index) => `<p>${name} (${index + 1})</p>`).join('');
+    function updateTable() {
+      const div = document.getElementById('table');
+      div.innerHTML = playedCards.map(card => `<span class="played-card">${card}</span>`).join('') || 'Bàn bài';
     }
 
     function playCard(card) {
-      if (!isMyTurn) {
+      if (myIndex !== currentTurn) {
         alert('Chưa đến lượt bạn!');
         return;
       }
