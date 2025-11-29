@@ -1,38 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tiến Lên Multiplayer</title>
-  <style> body { font-family: Arial; text-align: center; background: green; color: white; } #hand { display: flex; justify-content: center; } .card { background: white; color: black; margin: 5px; padding: 10px; cursor: pointer; } </style>
+  <style>
+    body { font-family: Arial; text-align: center; background: green; color: white; padding: 20px; }
+    #roomInput, #nameInput { padding: 10px; margin: 5px; width: 200px; }
+    #hand { display: flex; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+    .card { background: white; color: black; margin: 5px; padding: 10px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    .card:hover { transform: scale(1.1); }
+    .selected { background: yellow; }
+    #status { font-size: 18px; margin: 10px; }
+  </style>
 </head>
 <body>
   <h1>🎮 Tiến Lên Miền Nam Multiplayer</h1>
-  <input id="roomId" placeholder="Room ID (e.g. abc123)" />
-  <input id="playerName" placeholder="Tên bạn" />
-  <button onclick="joinRoom()">Tham Gia Phòng</button>
-  <div id="hand"></div>
-  <div id="status"></div>
+  <div id="joinForm">
+    <input id="roomId" placeholder="Room ID (e.g. room1)" value="room1" />
+    <input id="playerName" placeholder="Tên bạn" />
+    <button onclick="joinRoom()">Tham Gia Phòng</button>
+  </div>
+  <div id="gameArea" style="display: none;">
+    <div id="status">Đang chờ người chơi...</div>
+    <div id="players"></div>
+    <div id="hand"></div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     let hand = [];
+    let roomId = '';
+    let isMyTurn = false;
+
     function joinRoom() {
-      const roomId = document.getElementById('roomId').value || 'room1';
+      roomId = document.getElementById('roomId').value || 'room1';
       const playerName = document.getElementById('playerName').value || 'Player';
       socket.emit('joinRoom', { roomId, playerName });
-      socket.on('gameStarted', (data) => {
-        hand = data.hands.find(h => h.name === playerName).hand;
-        displayHand();
-      });
-      socket.on('cardPlayed', (data) => {
-        document.getElementById('status').innerText = `Lượt ${data.turn}`;
-      });
+      document.getElementById('joinForm').style.display = 'none';
+      document.getElementById('status').innerText = 'Đang tham gia...';
     }
+
+    socket.on('joinedRoom', (data) => {
+      if (data.success) {
+        document.getElementById('status').innerText = `Tham gia thành công! Số người: ${data.players}`;
+        document.getElementById('gameArea').style.display = 'block';
+      } else {
+        document.getElementById('status').innerText = data.message;
+        document.getElementById('joinForm').style.display = 'block';
+      }
+    });
+
+    socket.on('playerJoined', (data) => {
+      document.getElementById('status').innerText = `Số người trong phòng: ${data.players}`;
+    });
+
+    socket.on('gameStarted', (data) => {
+      hand = data.hands.find(h => h.turn).hand || []; // Hand của chính mình
+      isMyTurn = data.currentTurn === data.hands.findIndex(h => h.turn);
+      displayHand();
+      document.getElementById('status').innerText = `Game bắt đầu! Lượt bạn: ${isMyTurn}`;
+      document.getElementById('players').innerHTML = data.hands.map(h => `<p>${h.name}</p>`).join('');
+    });
+
+    socket.on('cardPlayed', (data) => {
+      isMyTurn = data.turn === socket.id; // Update lượt
+      document.getElementById('status').innerText = `Bài được đánh: ${data.card}. Lượt bạn: ${isMyTurn}`;
+    });
+
     function displayHand() {
       const div = document.getElementById('hand');
-      div.innerHTML = hand.map(card => `<div class="card" onclick="playCard('${card}')">${card}</div>`).join('');
+      div.innerHTML = '';
+      hand.forEach((card, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        cardEl.innerText = card;
+        cardEl.onclick = () => playCard(card);
+        div.appendChild(cardEl);
+      });
     }
+
     function playCard(card) {
-      socket.emit('playCard', { roomId: 'room1', card });
+      if (!isMyTurn) return;
+      socket.emit('playCard', { roomId, card });
       hand = hand.filter(c => c !== card);
       displayHand();
     }
