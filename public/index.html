@@ -12,12 +12,13 @@
     .card:hover { transform: scale(1.1); }
     .selected { background: yellow; }
     #status { font-size: 18px; margin: 10px; }
+    #players { margin: 10px; }
   </style>
 </head>
 <body>
   <h1>🎮 Tiến Lên Miền Nam Multiplayer</h1>
   <div id="joinForm">
-    <input id="roomId" placeholder="Room ID (e.g. room1)" value="room1" />
+    <input id="roomId" placeholder="Room ID (e.g. 123)" value="123" />
     <input id="playerName" placeholder="Tên bạn" />
     <button onclick="joinRoom()">Tham Gia Phòng</button>
   </div>
@@ -33,9 +34,10 @@
     let hand = [];
     let roomId = '';
     let isMyTurn = false;
+    let players = [];
 
     function joinRoom() {
-      roomId = document.getElementById('roomId').value || 'room1';
+      roomId = document.getElementById('roomId').value || '123';
       const playerName = document.getElementById('playerName').value || 'Player';
       socket.emit('joinRoom', { roomId, playerName });
       document.getElementById('joinForm').style.display = 'none';
@@ -52,27 +54,28 @@
       }
     });
 
-    socket.on('playerJoined', (data) => {
+    socket.on('roomStatus', (data) => {
       document.getElementById('status').innerText = `Số người trong phòng: ${data.players}`;
     });
 
     socket.on('gameStarted', (data) => {
-      hand = data.hands.find(h => h.turn).hand || []; // Hand của chính mình
-      isMyTurn = data.currentTurn === data.hands.findIndex(h => h.turn);
+      hand = data.myHand;
+      isMyTurn = data.currentTurn === 0; // Giả sử player 1 bắt đầu
+      players = data.players;
+      displayPlayers();
       displayHand();
-      document.getElementById('status').innerText = `Game bắt đầu! Lượt bạn: ${isMyTurn}`;
-      document.getElementById('players').innerHTML = data.hands.map(h => `<p>${h.name}</p>`).join('');
+      document.getElementById('status').innerText = `Game bắt đầu! Lượt ${players[data.currentTurn] || 'bạn'}`;
     });
 
     socket.on('cardPlayed', (data) => {
-      isMyTurn = data.turn === socket.id; // Update lượt
-      document.getElementById('status').innerText = `Bài được đánh: ${data.card}. Lượt bạn: ${isMyTurn}`;
+      isMyTurn = data.currentTurn === 0; // Update lượt
+      document.getElementById('status').innerText = `Bài được đánh! Lượt ${players[data.currentTurn] || 'bạn'}`;
     });
 
     function displayHand() {
       const div = document.getElementById('hand');
       div.innerHTML = '';
-      hand.forEach((card, index) => {
+      hand.forEach(card => {
         const cardEl = document.createElement('div');
         cardEl.className = 'card';
         cardEl.innerText = card;
@@ -81,8 +84,15 @@
       });
     }
 
+    function displayPlayers() {
+      document.getElementById('players').innerHTML = players.map((name, index) => `<p>${name} (${index + 1})</p>`).join('');
+    }
+
     function playCard(card) {
-      if (!isMyTurn) return;
+      if (!isMyTurn) {
+        alert('Chưa đến lượt bạn!');
+        return;
+      }
       socket.emit('playCard', { roomId, card });
       hand = hand.filter(c => c !== card);
       displayHand();
