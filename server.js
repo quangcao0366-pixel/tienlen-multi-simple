@@ -20,9 +20,10 @@ io.on('connection', (socket) => {
       rooms[roomId] = { players: [], deck: [], currentTurn: 0 };
     }
     if (rooms[roomId].players.length < 4) {
-      rooms[roomId].players.push({ id: socket.id, name: playerName, hand: [] });
+      const playerIndex = rooms[roomId].players.length;
+      rooms[roomId].players.push({ id: socket.id, name: playerName, hand: [], index: playerIndex });
       socket.join(roomId);
-      socket.emit('joinedRoom', { success: true, roomId, players: rooms[roomId].players.length });
+      socket.emit('joinedRoom', { success: true, roomId, playerIndex, players: rooms[roomId].players.length });
       io.to(roomId).emit('roomStatus', { players: rooms[roomId].players.length });
       if (rooms[roomId].players.length === 4) {
         startGame(roomId);
@@ -36,12 +37,11 @@ io.on('connection', (socket) => {
     const { roomId, card } = data;
     const room = rooms[roomId];
     if (room) {
-      const playerIndex = room.players.findIndex(p => p.id === socket.id);
-      if (playerIndex === room.currentTurn) {
-        const player = room.players[playerIndex];
+      const player = room.players.find(p => p.id === socket.id);
+      if (player && player.index === room.currentTurn) {
         player.hand = player.hand.filter(c => c !== card);
         room.currentTurn = (room.currentTurn + 1) % 4;
-        io.to(roomId).emit('cardPlayed', { playerIndex, card, currentTurn: room.currentTurn });
+        io.to(roomId).emit('cardPlayed', { playerIndex: player.index, card, currentTurn: room.currentTurn });
         if (player.hand.length === 0) {
           io.to(roomId).emit('gameOver', { winner: player.name });
         }
@@ -70,11 +70,12 @@ function startGame(roomId) {
     player.hand = deck.splice(0, 13);
     player.hand.sort((a, b) => a.localeCompare(b));
   });
-  // Gửi riêng cho từng player (bảo mật: chỉ hand của mình)
+  // Gửi riêng cho từng player (bảo mật)
   room.players.forEach(player => {
-    const playerIndex = room.players.findIndex(p => p.id === player.id);
+    const playerIndex = player.index;
     io.to(player.id).emit('gameStarted', {
       myHand: player.hand,
+      myIndex: playerIndex,
       currentTurn: room.currentTurn,
       players: room.players.map(p => p.name)
     });
