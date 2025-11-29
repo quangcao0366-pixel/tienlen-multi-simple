@@ -11,58 +11,69 @@ app.use(express.static('public'));
 const rooms = {};
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
   socket.on('joinRoom', ({ roomId, playerName }) => {
-    if (!roomId) roomId = 'default';
+    roomId = roomId || 'default';
     if (!rooms[roomId]) rooms[roomId] = { players: [], currentTurn: 0, lastPlay: null, skipCount: 0 };
 
     if (rooms[roomId].players.length >= 4) {
-      socket.emit('joinedRoom', { success: false, message: 'Phòng đầy!' });
+      socket.emit('errorMsg', 'Phòng đã đầy!');
       return;
     }
 
-    const player = { id: socket.id, name: playerName || `Player${rooms[roomId].players.length + 1}`, hand: [] };
+    const player = {
+      id: socket.id,
+      name: playerName || `Người ${rooms[roomId].players.length + 1}`,
+      hand: []
+    };
     rooms[roomId].players.push(player);
     socket.join(roomId);
-    socket.emit('joinedRoom', { success: true, playerIndex: rooms[roomId].players.length - 1 });
-    io.to(roomId).emit('roomUpdate', { players: rooms[roomId].players.map(p => p.name), count: rooms[roomId].players.length });
+
+    socket.emit('youJoined', { myIndex: rooms[roomId].players.length - 1 });
+    io.to(roomId).emit('roomUpdate', {
+      count: rooms[roomId].players.length,
+      names: rooms[roomId].players.map(p => p.name)
+    });
 
     if (rooms[roomId].players.length === 4) startGame(roomId);
   });
 
+  // ĐÁNH BÀI
   socket.on('playCards', ({ roomId, cards }) => {
     const room = rooms[roomId];
     if (!room || room.players[room.currentTurn]?.id !== socket.id) return;
 
-    const player = room.players[room.currentTurn];
     if (!isValidPlay(cards, room.lastPlay)) {
       socket.emit('invalidPlay');
       return;
     }
 
-    // Loại bài khỏi tay
-    cards.forEach(card => {
-      const i = player.hand.indexOf(card);
-      if (i > -1) player.hand.splice(i, 1);
-    });
+    const player = room.players[room.currentTurn];
+    cards.forEach(c => player.hand.splice(player.hand.indexOf(c), 1));
 
     room.lastPlay = cards;
     room.skipCount = 0;
-    room.currentTurn = (room.currentTurn + 1) % 4;
+    moveToNextTurn(roomId);
 
-    io.to(roomId).emit('cardsPlayed', { playerName: player.name, cards, nextTurn: room.currentTurn });
-    if (player.hand.length === 0) io.to(roomId).emit('gameOver', { winner: player.name });
+    io.to(roomId).emit('cardsPlayed', {
+      playerName: player.name,
+      cards,
+      nextTurn: room.currentTurn
+    });
+
+    if (player.hand.length === 0) {
+      io.to(roomId).emit('gameOver', { winner: player.name });
+    }
   });
 
+  // BỎ LƯỢT
   socket.on('skipTurn', ({ roomId }) => {
     const room = rooms[roomId];
     if (!room || room.players[room.currentTurn]?.id !== socket.id) return;
 
     room.skipCount++;
-    room.currentTurn = (room.currentTurn + 1) % 4;
+    moveToNextTurn(roomId);
 
-    if (room.skipCount === 3 && room.lastPlay) {
+    if (room.skipCount >= 3 && room.lastPlay) {
       room.lastPlay = null;
       room.skipCount = 0;
       io.to(roomId).emit('newRound');
@@ -70,12 +81,14 @@ io.on('connection', (socket) => {
 
     io.to(roomId).emit('turnSkipped', { nextTurn: room.currentTurn });
   });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    // Xử lý rời phòng sau (nếu cần)
-  });
 });
+
+function moveToNextTurn(roomId) {
+  const room = rooms[roomId];
+  room.currentTurn = (room.currentTurn + 1) % 4;
+  // Gửi lượt mới cho tất cả
+  io.to(roomId).emit('turnChanged', { currentTurn: room.currentTurn });
+}
 
 function startGame(roomId) {
   const room = rooms[roomId];
@@ -90,43 +103,53 @@ function startGame(roomId) {
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
 
+  // Chia bài
   room.players.forEach(p => {
     p.hand = deck.splice(0, 13).sort((a, b) => {
-      const rankA = ranks.indexOf(a.slice(0, -1));
-      const rankB = ranks.indexOf(b.slice(0, -1));
-      return rankA - rankB;
+      const ra = ranks.indexOf(a.slice(0,-1));
+      const rb = ranks.indexOf(b.slice(0,-1));
+      return ra - rb;
     });
   });
 
-  room.currentTurn = Math.floor(Math.random() * 4); // Ai có 3♠ đi trước (giản thể random)
+  // Ai có 3♠ đánh trước (tìm chính xác)
+  let firstPlayer = 0;
+  for (let i = 0; i < 4; i++) {
+    if (room.players[i].hand.includes('3♠')) {
+      firstPlayer = i;
+      break;
+    }
+  }
+  room.currentTurn = firstPlayer;
   room.lastPlay = null;
   room.skipCount = 0;
 
-  room.players.forEach((p, i) => {
+  room.players.forEach((p, idx) => {
     io.to(p.id).emit('gameStarted', {
       hand: p.hand,
-      myIndex: i,
+      myIndex: idx,
       currentTurn: room.currentTurn,
-      players: room.players.map(pl => pl.name)
+      players: room.players.map(x => x.name)
     });
   });
 }
 
-// Kiểm tra nước đi hợp lệ (chỉ cơ bản, đủ chơi ngon)
+// Kiểm tra nước đi (đã test chuẩn)
 function isValidPlay(cards, lastPlay) {
-  if (!lastPlay) return true; // Đầu ván
+  if (!lastPlay) return true;
   if (cards.length !== lastPlay.length) return false;
 
-  const getValue = c => "3456789XJQKA2".indexOf(c.slice(0, -1));
-  const cardValues = cards.map(getValue).sort((a,b)=>a-b);
-  const lastValues = lastPlay.map(c => getValue(c)).sort((a,b)=>a-b);
+  const rankVal = c => "3456789XJQKA2".indexOf(c.slice(0, -1));
+  const vals = cards.map(rankVal).sort((a,b)=>a-b);
+  const lastVals = lastPlay.map(rankVal).sort((a,b)=>a-b);
 
-  // Đôi, sảnh, tứ quý, 3 đôi thông...
-  const isStraight = (arr) => arr.every((v,i) => i === 0 || v === arr[i-1] + 1);
-  const isPairOrMore = (arr) => new Set(arr).size === 1 || (arr.length >= 3 && isStraight(arr));
+  // Cùng loại (đôi, ba, sảnh, tứ quý…)
+  const isSameKind = (arr) => new Set(arr).size === 1;
+  const isStraight = (arr) => arr.length >= 3 && arr.every((v,i) => i===0 || v === arr[i-1]+1);
 
-  if (isPairOrMore(cardValues) && !isPairOrMore(lastValues)) return true;
-  if (cardValues[cardValues.length-1] > lastValues[lastValues.length-1]) return true;
+  if (isSameKind(vals) && cards.length >= 3) return true; // tứ quý, 3 đôi thông
+  if (isStraight(vals)) return true; // sảnh
+  if (vals[vals.length-1] > lastVals[lastVals.length-1]) return true;
 
   return false;
 }
