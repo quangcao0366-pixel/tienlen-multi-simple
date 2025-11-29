@@ -67,11 +67,23 @@ socket.on('gameStarted', data => {
   myIndex = data.myIndex;
   currentTurn = data.currentTurn;
   players = data.players;
+  
+  // Reset selected khi chia bài mới
+  selected = [];
+  
   document.getElementById('status').innerHTML = `<span style="color:gold">VÁN ${data.vanSo} – ${players[currentTurn]} đánh trước!</span>`;
+  document.getElementById('table').innerHTML = 'Bàn bài trống';
+  
   renderHand();
+  
+  // BUỘC CẬP NHẬT LƯỢT + BẬT NÚT ĐÁNH NGAY LẬP TỨC
   updateTurn();
   updatePlayersList();
-  document.getElementById('table').innerHTML = 'Bàn bài trống';
+  
+  // Nếu bạn là người đánh trước (có 3♠ hoặc thắng ván trước) → thông báo to rõ
+  if (myIndex === currentTurn) {
+    document.getElementById('status').innerHTML = '<span style="color:#ff1744; font-size:32px; animation:blink 1s infinite">ĐẾN LƯỢT BẠN – ĐÁNH ĐI NGAY!</span>';
+  }
 });
 
 // Cập nhật lượt
