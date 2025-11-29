@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tiến Lên Multiplayer</title>
+  <style> body { font-family: Arial; text-align: center; background: green; color: white; } #hand { display: flex; justify-content: center; } .card { background: white; color: black; margin: 5px; padding: 10px; cursor: pointer; } </style>
+</head>
+<body>
+  <h1>🎮 Tiến Lên Miền Nam Multiplayer</h1>
+  <input id="roomId" placeholder="Room ID (e.g. abc123)" />
+  <input id="playerName" placeholder="Tên bạn" />
+  <button onclick="joinRoom()">Tham Gia Phòng</button>
+  <div id="hand"></div>
+  <div id="status"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let hand = [];
+    function joinRoom() {
+      const roomId = document.getElementById('roomId').value || 'room1';
+      const playerName = document.getElementById('playerName').value || 'Player';
+      socket.emit('joinRoom', { roomId, playerName });
+      socket.on('gameStarted', (data) => {
+        hand = data.hands.find(h => h.name === playerName).hand;
+        displayHand();
+      });
+      socket.on('cardPlayed', (data) => {
+        document.getElementById('status').innerText = `Lượt ${data.turn}`;
+      });
+    }
+    function displayHand() {
+      const div = document.getElementById('hand');
+      div.innerHTML = hand.map(card => `<div class="card" onclick="playCard('${card}')">${card}</div>`).join('');
+    }
+    function playCard(card) {
+      socket.emit('playCard', { roomId: 'room1', card });
+      hand = hand.filter(c => c !== card);
+      displayHand();
+    }
+  </script>
+</body>
+</html>
