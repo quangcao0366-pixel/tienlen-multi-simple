@@ -5,45 +5,58 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tiến Lên Miền Nam Multiplayer</title>
 <style>
-  body {margin:0; font-family:Arial; background:#0b6623; color:white; text-align:center; padding:20px; overflow:hidden;}
-  h1 {margin:10px; color:#ffca28; text-shadow:0 0 10px gold;}
+  body {margin:0; font-family:Arial; background:#0b6623; color:white; height:100vh; display:flex; flex-direction:column;}
+  h1 {margin:15px; color:#ffca28; text-shadow:0 0 15px gold; font-size:28px;}
   input, button {padding:12px; margin:5px; font-size:16px; border-radius:8px;}
   button {background:#ffca28; border:none; cursor:pointer; font-weight:bold;}
-  #gameArea {max-width:1200px; margin:0 auto; position:relative;}
-  
-  /* BÀN BÀI ĐẸP NHƯ THẬT */
+
+  #gameArea {flex:1; display:flex; flex-direction:column; justify-content:space-between; max-width:1100px; margin:0 auto; padding:10px;}
+
+  /* Bàn bài nhỏ gọn, đẹp, cân đối */
   #table {
-    background: radial-gradient(circle at center, #1b5e20 0%, #0b6623 100%);
-    border: 15px solid #8B4513;
+    background: radial-gradient(#1b5e20 30%, #0b6623 100%);
+    border: 12px solid #8B4513;
     border-radius: 50%;
-    width: 800px; height: 500px;
-    margin: 30px auto;
+    width: 650px; height: 400px;
+    margin: 0 auto;
     position: relative;
-    box-shadow: inset 0 0 60px rgba(0,0,0,0.8), 0 0 40px gold;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.7), 0 0 30px #ffca28;
   }
   #playedArea {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; width: 600px;
+    position: absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    display:flex; flex-wrap:wrap; gap:12px; justify-content:center; width:500px;
   }
   .played-card {
-    font-size: 60px; padding: 10px; background: white; color: black; border-radius: 12px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.7); transform: rotate(var(--r, 0deg)) scale(1);
-    animation: flyIn 0.6s ease-out;
+    font-size: 52px; padding:8px 12px; background:white; color:black; border-radius:10px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.7); 
+    animation: flyIn 0.5s ease-out;
+    transform: rotate(var(--r));
   }
-  @keyframes flyIn { from {transform: translateY(300px) scale(0.3); opacity:0;} to {opacity:1;} }
+  @keyframes flyIn {from{transform:translateY(400px) scale(0); opacity:0} to{opacity:1}}
 
-  #hand {display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:30px 0;}
-  .card {
-    background:white; color:black; padding:18px 10px; border-radius:12px; cursor:pointer;
-    font-weight:bold; user-select:none; transition:all .2s; width:70px; font-size:22px;
-    box-shadow:0 6px 12px rgba(0,0,0,0.5);
+  /* Hiển thị bài của 4 người xung quanh bàn */
+  .player-area {
+    position: absolute; text-align:center; font-weight:bold; color:#ffca28;
   }
-  .card.selected {background:#ffd700; transform:translateY(-30px); box-shadow:0 20px 40px gold;}
+  #p0 {bottom: -80px; left: 50%; transform: translateX(-50%);} /* Bạn */
+  #p1 {top: 10px; left: 10px;}
+  #p2 {top: 10px; right: 10px;}
+  #p3 {bottom: -80px; right: 10px; transform: translateX(50%);}
+
+  .hand-container {
+    display:flex; justify-content:center; gap:8px; flex-wrap:wrap; max-width:700px; margin:10px auto;
+  }
+  .card {
+    background:white; color:black; padding:14px 8px; border-radius:10px; cursor:pointer;
+    font-weight:bold; user-select:none; transition:all .2s; width:62px; font-size:20px;
+    box-shadow:0 5px 10px rgba(0,0,0,0.5);
+  }
+  .card.selected {background:#ffd700; transform:translateY(-25px); box-shadow:0 15px 30px gold;}
   .card.he {color:red;}
-  #controls button {padding:18px 40px; font-size:24px; margin:20px;}
-  #status {font-size:32px; font-weight:bold; margin:20px; color:#ffca28;}
+
+  #controls {text-align:center; margin:15px 0;}
+  #controls button {padding:16px 40px; font-size:22px; margin:0 15px;}
+  #status {font-size:28px; font-weight:bold; text-align:center; margin:10px; color:#ffca28;}
   @keyframes blink {0%,100%{opacity:1} 50%{opacity:0.3}}
 </style>
 </head>
@@ -57,19 +70,24 @@
 </div>
 
 <div id="gameArea" style="display:none">
-  <div id="status">Đang chờ 4 người...</div>
+  <div id="status">Đang chờ đủ 4 người...</div>
   <div id="players"></div>
-  
-  <!-- BÀN BÀI ĐẸP LUNG LINH -->
+
+  <!-- Bàn bài + bài đã đánh -->
   <div id="table">
-    <div id="playedArea">Bàn bài trống</div>
+    <div id="playedArea"><div style="color:#aaa;font-size:24px">Bàn bài trống</div></div>
   </div>
-  
+
+  <!-- Hiển thị tên + bài của 4 người -->
+  <div class="player-area" id="p1"><div id="name1"></div><div class="hand-container" id="hand1"></div></div>
+  <div class="player-area" id="p2"><div id="name2"></div><div class="hand-container" id="hand2"></div></div>
+  <div class="player-area" id="p3"><div id="name3"></div><div class="hand-container" id="hand3"></div></div>
+  <div class="player-area" id="p0"><div id="name0">Bạn</div><div class="hand-container" id="hand0"></div></div>
+
   <div id="controls">
     <button id="playBtn" disabled>ĐÁNH BÀI</button>
     <button id="skipBtn" disabled>BỎ LƯỢT</button>
   </div>
-  <div id="hand"></div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -82,63 +100,73 @@ function joinRoom() {
   const name = document.getElementById('playerName').value.trim() || 'Người chơi';
   socket.emit('joinRoom', { roomId, playerName: name });
   document.getElementById('joinForm').style.display = 'none';
-  document.getElementById('gameArea').style.display = 'block';
+  document.getElementById('gameArea').style.display = 'flex';
+  document.getElementById('gameArea').style.flexDirection = 'column';
 }
 
 socket.on('youJoined', d => myIndex = d.myIndex);
 socket.on('roomUpdate', d => {
   players = d.names || [];
-  document.getElementById('status').innerText = `Đang có ${d.count}/4 người`;
+  document.getElementById('status').innerText = `Phòng ${roomId} • ${d.count}/4 người`;
 });
 
 socket.on('gameStarted', d => {
-  hand = d.hand; myIndex = d.myIndex; currentTurn = d.currentTurn; players = d.players;
-  selected = [];
-  document.getElementById('playedArea').innerHTML = 'Bàn bài trống';
-  renderHand();
+  hand = d.hand; myIndex = d.myIndex; currentTurn = d.currentTurn; players = d.players; selected = [];
+  document.getElementById('playedArea').innerHTML = '<div style="color:#aaa;font-size:24px">Bàn bài trống</div>';
+  renderAllHands();
   updateTurn();
-  updatePlayersList();
 });
 
 socket.on('cardsPlayed', d => {
   const area = document.getElementById('playedArea');
   area.innerHTML = '';
-  d.cards.forEach((card, i) => {
+  d.cards.forEach((c,i) => {
     const el = document.createElement('div');
     el.className = 'played-card';
-    el.style.setProperty('--r', (Math.random()*40 - 20) + 'deg');
-    el.innerText = card;
-    if (['♥','♦'].includes(card.slice(-1))) el.style.color = 'red';
+    el.style.setProperty('--r', (Math.random()*30-15)+'deg');
+    el.innerText = c;
+    if (['♥','♦'].includes(c.slice(-1))) el.style.color = 'red';
     area.appendChild(el);
   });
-  updateTurn(); updatePlayersList();
+  renderAllHands();
+  updateTurn();
 });
 
-socket.on('turnChanged', d => { currentTurn = d.currentTurn; updateTurn(); updatePlayersList(); });
-socket.on('turnSkipped', d => { currentTurn = d.nextTurn; updateTurn(); updatePlayersList(); });
-socket.on('newRound', () => { document.getElementById('playedArea').innerHTML = '<span style="color:gold;font-size:40px">VÒNG MỚI!</span>'; });
-socket.on('gameOver', d => { setTimeout(() => alert(`CHÚC MỪNG ${d.winner} THẮNG CỤC!`), 500); });
+socket.on('turnChanged', d => { currentTurn = d.currentTurn; updateTurn(); });
+socket.on('turnSkipped', d => { currentTurn = d.nextTurn; updateTurn(); });
+socket.on('newRound', () => document.getElementById('playedArea').innerHTML = '<div style="color:gold;font-size:32px">VÒNG MỚI!</div>');
+socket.on('gameOver', d => setTimeout(() => alert(`${d.winner} THẮNG CỤC! Ván mới sau 5s...`), 600));
 
-function renderHand() {
-  const div = document.getElementById('hand');
-  div.innerHTML = hand.map(c => {
-    const red = ['♥','♦'].includes(c.slice(-1)) ? 'he' : '';
-    return `<div class="card ${red} ${selected.includes(c)?'selected':''}" onclick="toggle('${c}')">${c}</div>`;
-  }).join('');
+function renderAllHands() {
+  for (let i = 0; i < 4; i++) {
+    const container = document.getElementById('hand'+i);
+    const nameEl = document.getElementById('name'+(i===0?'0':i===1?1:i===2?2:3));
+    nameEl.innerText = i === myIndex ? 'Bạn' : players[i] || 'Đang chờ...';
+    nameEl.style.color = i === currentTurn ? '#ff1744' : '#ffca28';
+
+    if (i === myIndex) {
+      container.innerHTML = hand.map(c => {
+        const red = ['♥','♦'].includes(c.slice(-1))?'he':'';
+        return `<div class="card ${red} ${selected.includes(c)?'selected':''}" onclick="toggle('${c}')">${c}</div>`;
+      }).join('');
+    } else {
+      const count = (players.length > i && hand.length === 13) ? (13 - (selected.length > 0 && myIndex === i ? selected.length : 0)) : 13;
+      container.innerHTML = Array(count).fill().map(() => '<div class="card" style="background:#333; color:#666; cursor:default">?</div>').join('');
+    }
+  }
 }
 
 function toggle(c) {
-  if (selected.includes(c)) selected = selected.filter(x => x !== c);
+  if (selected.includes(c)) selected = selected.filter(x=>x!==c);
   else selected.push(c);
-  renderHand();
-  document.getElementById('playBtn').disabled = selected.length === 0 || myIndex !== currentTurn;
+  renderAllHands();
+  document.getElementById('playBtn').disabled = selected.length===0 || myIndex !== currentTurn;
 }
 
 function playSelected() {
-  if (selected.length === 0 || myIndex !== currentTurn) return;
+  if (selected.length===0 || myIndex !== currentTurn) return;
   socket.emit('playCards', { roomId, cards: selected });
   selected = [];
-  renderHand();
 }
 
 function skipTurn() {
@@ -147,18 +175,13 @@ function skipTurn() {
 }
 
 function updateTurn() {
-  const my = myIndex === currentTurn;
-  document.getElementById('playBtn').disabled = !my || selected.length === 0;
-  document.getElementById('skipBtn').disabled = !my;
-  document.getElementById('status').innerHTML = my 
-    ? '<span style="color:#ff1744; animation:blink 1s infinite">ĐẾN LƯỢT BẠN – ĐÁNH ĐI NGAY!</span>'
-    : `Đợi <strong>${players[currentTurn] || 'người chơi'}</strong> đánh...`;
-}
-
-function updatePlayersList() {
-  document.getElementById('players').innerHTML = players.map((n,i) => 
-    `<p style="margin:8px;font-size:22px">${i===currentTurn?'→':''} ${i+1}. ${n}</p>`
-  ).join('');
+  const myTurn = myIndex === currentTurn;
+  document.getElementById('playBtn').disabled = !myTurn || selected.length===0;
+  document.getElementById('skipBtn').disabled = !myTurn;
+  document.getElementById('status').innerHTML = myTurn 
+    ? '<span style="color:#ff1744; animation:blink 1s infinite; font-size:32px">ĐẾN LƯỢT BẠN – ĐÁNH ĐI!</span>'
+    : `Đợi <strong>${players[currentTurn]}</strong> đánh...`;
+  renderAllHands();
 }
 </script>
 </body>
