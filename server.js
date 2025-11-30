@@ -30,11 +30,12 @@ io.on('connection', (socket) => {
     }
 
     const player = {
-      id: socket.id,
-      name: playerName || `Người ${rooms[roomId].players.length + 1}`,
-      hand: []
-    };
-    rooms[roomId].players.push(player);
+  id: socket.id,
+  name: playerName || `Người ${rooms[roomId].players.length + 1}`,
+  hand: [],
+  cardsLeft: 0   // <--- DÁN DÒNG NÀY VÀO ĐÂY
+};
+rooms[roomId].players.push(player);
     socket.join(roomId);
 
     socket.emit('youJoined', { myIndex: rooms[roomId].players.length - 1 });
@@ -55,8 +56,11 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const player = room.players[room.currentTurn];
-    cards.forEach(c => player.hand.splice(player.hand.indexOf(c), 1));
+    // CẬP NHẬT SỐ BÀI CÒN LẠI + GỬI CHO TẤT CẢ CLIENT
+room.players[room.currentTurn].cardsLeft = room.players[room.currentTurn].hand.length;
+io.to(roomId).emit('updateCardsLeft', {
+  cardsLeft: room.players.map(p => p ? p.cardsLeft : 13)
+});
 
     room.lastPlay = cards;
     room.skipCount = 0;
