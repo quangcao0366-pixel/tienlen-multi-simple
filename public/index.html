@@ -1,30 +1,30 @@
 <script>
-// THAY TOÀN BỘ PHẦN <script> BÊN DƯỚI BẰNG ĐOẠN NÀY (từ đây đến hết thẻ </script>)
-let hand = [], selected = [], myIndex = -1, currentTurn = -1, roomId = '123', players = [], readyList = [], gameStarted = false;
-let cardsLeft = [13,13,13,13]; // Số bài còn lại của 4 người
+let hand = [], selected = [], myIndex = -1, currentTurn = -1, roomId = '123', players = [], gameStarted = false;
+let cardsLeft = [13,13,13,13];
 
-const socket = io();
+const socket = io({ reconnectionAttempts: 5, timeout: 20000 });
 
 function joinRoom() {
   roomId = document.getElementById('roomId').value.trim() || '123';
-  const name = document.getElementById('playerName').value.trim() || 'Player' + Date.now().toString().slice(-4);
+  const name = document.getElementById('playerName').value.trim() || 'Khách' + Date.now().toString().slice(-3);
   socket.emit('joinRoom', { roomId, playerName: name });
 }
+
+socket.on('connect', () => console.log('Connected to server'));
+socket.on('disconnect', () => document.getElementById('status').innerHTML = '<span style="color:#ff1744">Mất kết nối... đang thử lại</span>');
 
 socket.on('youJoined', data => {
   myIndex = data.myIndex;
   document.getElementById('joinForm').style.display = 'none';
   document.getElementById('gameArea').style.display = 'block';
-  document.getElementById('readyBtn').style.display = 'block';
+  document.getElementById('status').innerHTML = `Phòng ${roomId} • 1/4 người`;
 });
 
 socket.on('roomUpdate', data => {
   players = data.names || [];
-  readyList = data.ready || [];
   document.getElementById('status').innerHTML = `Phòng ${roomId} • ${data.count}/4 người`;
-  updateReadyButton();
-  renderHands();
   updateNames();
+  renderHands();
 });
 
 socket.on('gameStarted', data => {
@@ -32,13 +32,11 @@ socket.on('gameStarted', data => {
   hand = data.hand || [];
   currentTurn = data.currentTurn;
   selected = [];
-  document.getElementById('readyBtn').style.display = 'none';
   document.getElementById('playedArea').innerHTML = '<div style="color:#aaa;font-size:36px">Bàn bài trống</div>';
   renderHands();
   updateTurn();
 });
 
-// NHẬN CẬP NHẬT SỐ BÀI CÒN LẠI TỪ SERVER
 socket.on('updateCardsLeft', data => {
   cardsLeft = data.cardsLeft;
   renderHands();
@@ -55,72 +53,47 @@ socket.on('cardsPlayed', data => {
     if (['♥','♦'].includes(c.slice(-1))) el.style.color = 'red';
     area.appendChild(el);
   });
-
-  // Chỉ trừ bài của chính mình
   if (data.playerIndex === myIndex) {
     hand = hand.filter(x => !data.cards.includes(x));
     selected = [];
+    renderHands();
   }
-
-  renderHands();
   updateTurn();
 });
 
 socket.on('turnChanged', d => { currentTurn = d.currentTurn; updateTurn(); });
 socket.on('turnSkipped', d => { currentTurn = d.nextTurn; updateTurn(); });
-socket.on('newRound', () => document.getElementById('playedArea').innerHTML = '<div style="color:gold;font-size:42px">VÒNG MỚI!</div>');
-socket.on('gameOver', () => {
-  setTimeout(() => location.reload(), 4000);
+socket.on('newRound', () => document.getElementById('playedArea').innerHTML = '<div style="color:gold;font-size:50px">VÒNG MỚI!</div>');
+socket.on('gameOver', d => {
+  document.getElementById('playedArea').innerHTML = `<div style="color:#ffeb3b;font-size:50px">CHÚC MỪNG ${d.winner} THẮNG!</div>`;
+  setTimeout(() => location.reload(), 6000);
 });
 
-function toggleReady() {
-  socket.emit('toggleReady', { roomId });
-}
-
-function updateReadyButton() {
-  const btn = document.getElementById('readyBtn');
-  if (readyList.length === 4 || gameStarted) {
-    btn.style.display = 'none';
-  } else {
-    btn.style.display = 'block';
-    const iAmReady = readyList.includes(myIndex);
-    btn.innerText = iAmReady ? 'HỦY SẴN SÀNG' : 'SẴN SÀNG';
-    btn.className = iAmReady ? 'ready' : '';
-  }
-}
-
-// HÀM HIỂN THỊ BÀI – ĐÃ SỬA HOÀN HẢO
 function renderHands() {
-  // Bài của mình
+  // Tay mình
   document.getElementById('hand0').innerHTML = hand.map(c => {
     const red = ['♥','♦'].includes(c.slice(-1)) ? 'he' : '';
     return `<div class="card ${red} ${selected.includes(c)?'selected':''}" onclick="toggle('${c}')">${c}</div>`;
   }).join('');
 
-  // Bài của 3 người khác – hiển thị đúng số lá theo thứ tự ghế
+  // Tay 3 người khác
   for (let i = 1; i <= 3; i++) {
     const realIndex = (myIndex + i) % 4;
     const count = cardsLeft[realIndex] || 0;
-    const html = Array(count).fill('<div class="card back">?</div>').join('');
-    document.getElementById(`hand${i}`).innerHTML = html;
+    document.getElementById(`hand${i}`).innerHTML = Array(count).fill('<div class="card back">?</div>').join('');
   }
 }
 
 function updateNames() {
   for (let i = 0; i < 4; i++) {
     const el = document.getElementById(`name${i}`);
-    const name = i === myIndex ? 'Bạn' : (players[i] || '');
-    el.innerText = name + (readyList.includes(i) ? ' Ready' : '');
+    el.innerText = i === myIndex ? 'Bạn' : (players[i] || 'Đang chờ...');
     el.style.color = i === currentTurn ? '#ff1744' : '#ffca28';
   }
 }
 
 function toggle(c) {
-  if (selected.includes(c)) {
-    selected = selected.filter(x => x !== c);
-  } else {
-    selected.push(c);
-  }
+  selected = selected.includes(c) ? selected.filter(x => x !== c) : [...selected, c];
   renderHands();
   document.getElementById('playBtn').disabled = selected.length === 0 || myIndex !== currentTurn;
 }
@@ -128,6 +101,8 @@ function toggle(c) {
 function playSelected() {
   if (selected.length === 0 || myIndex !== currentTurn) return;
   socket.emit('playCards', { roomId, cards: selected });
+  selected = [];
+  renderHands();
 }
 
 function skipTurn() {
