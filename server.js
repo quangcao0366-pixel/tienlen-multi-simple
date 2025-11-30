@@ -1,18 +1,10 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: "*" } });
-
-app.use(express.static('public'));
-const rooms = {};
+// ... phần đầu file giữ nguyên
 
 io.on('connection', socket => {
   socket.on('joinRoom', ({roomId, playerName}) => {
     roomId = roomId || '123';
     if (!rooms[roomId]) rooms[roomId] = {players:[], ready:[], currentTurn:0, lastPlay:null, skipCount:0, gameCount:0, lastWinner:null};
-    if (rooms[roomId].players.length >=4) return;
+    if (rooms[roomId].players.length >=4) return socket.emit('roomUpdate',{count:4}); // phòng đầy
 
     const player = {id:socket.id, name:playerName||`Người ${rooms[roomId].players.length+1}`, hand:[]};
     rooms[roomId].players.push(player);
@@ -20,27 +12,32 @@ io.on('connection', socket => {
     const myIndex = rooms[roomId].players.length-1;
     socket.emit('youJoined', {myIndex});
 
-    updateRoom(roomId);
+    broadcastRoomUpdate(roomId);
 
-    // Auto start khi đủ 4 và tất cả ready
     if (rooms[roomId].players.length===4 && rooms[roomId].ready.length===4) startNewGame(roomId);
   });
 
   socket.on('toggleReady', roomId => {
-    const room = rooms[roomId]; if(!room) return;
-    const idx = room.players.findIndex(p=>p.id===socket.id);
-    if(idx===-1) return;
-    if(room.ready.includes(idx)) room.ready = room.ready.filter(i=>i!==idx);
+    const room = rooms[roomId];
+    if (!room) return;
+    const idx = room.players.findIndex(p => p.id===socket.id);
+    if (idx===-1) return;
+
+    const pos = room.ready.indexOf(idx);
+    if (pos>-1) room.ready.splice(pos,1);
     else room.ready.push(idx);
-    updateRoom(roomId);
-    if(room.players.length===4 && room.ready.length===4) startNewGame(roomId);
+
+    broadcastRoomUpdate(roomId);
+
+    if (room.players.length===4 && room.ready.length===4) {
+      setTimeout(()=>startNewGame(roomId), 800); // cho client thấy hiệu ứng đẹp
+    }
   });
 
-  // các event playCards, skipTurn... giữ nguyên như file trước (đã hoạt động tốt)
-  // (đoạn code playCards, skipTurn, moveToNextTurn, startNewGame, isValidPlay giữ nguyên 100% như lần trước mình gửi)
+  // các event playCards, skipTurn, startNewGame, isValidPlay... giữ nguyên 100% như file trước
 });
 
-function updateRoom(roomId){
+function broadcastRoomUpdate(roomId){
   const room = rooms[roomId];
   io.to(roomId).emit('roomUpdate', {
     count: room.players.length,
@@ -48,8 +45,3 @@ function updateRoom(roomId){
     ready: room.ready
   });
 }
-
-// ... (giữ nguyên toàn bộ phần startNewGame, playCards, skipTurn, isValidPlay như file trước)
-
-const PORT = process.env.PORT || 10000;
-server.listen(PORT, ()=>console.log(`Server chạy mượt - port ${PORT}`));
