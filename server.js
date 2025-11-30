@@ -9,22 +9,29 @@ const io = socketIo(server);
 app.use(express.static('public'));
 
 const rooms = {};
+
+// Giá trị lá bài và chất
 const cardValues = { '3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14,'2':15 };
 const suitOrder = { 'S':1, 'C':2, 'D':3, 'H':4 };
 
+// Tạo bộ bài 52 lá
 function createDeck() {
   const ranks = ['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
   const suits = ['S','C','D','H'];
   const deck = [];
-  for (let r of ranks) for (let s of suits) deck.push(r+s);
+  for (let r of ranks) for (let s of suits) deck.push(r + s);
   return deck.sort(() => Math.random() - 0.5);
 }
 
+// Sắp xếp bài theo giá trị
 function cardValue(card) {
-  return cardValues[card.slice(0,-1)] * 10 + suitOrder[card.slice(-1)];
+  const rank = card.slice(0, -1);
+  const suit = card.slice(-1);
+  return cardValues[rank === '10' ? '10' : rank] * 10 + suitOrder[suit];
 }
 
-function isValidPlay(cards, lastPlay, playerCount) {
+// Kiểm tra nước bài hợp lệ
+function isValidPlay(cards, lastPlay) {
   if (cards.length === 0) return false;
   if (!lastPlay || lastPlay.length === 0) return true;
   if (cards.length !== lastPlay.length) return false;
@@ -33,7 +40,7 @@ function isValidPlay(cards, lastPlay, playerCount) {
     if (arr.length === 1) return 'single';
     if (arr.every(c => cardValues[c.slice(0,-1)] === cardValues[arr[0].slice(0,-1)])) return 'pair';
     const vals = arr.map(c => cardValues[c.slice(0,-1)]).sort((a,b)=>a-b);
-    if (vals.every((v,i)=> i===0 || v===vals[i-1]+1)) return arr.length>=3 ? 'straight' : 'invalid';
+    if (vals.every((v,i)=> i===0 || v===vals[i-1]+1) && arr.length >= 3) return 'straight';
     return 'invalid';
   };
 
@@ -67,15 +74,19 @@ io.on('connection', socket => {
     }
 
     const room = rooms[roomId];
-    if (room.players.length >= 4 || room.gameStarted) return socket.emit('roomFull');
+    if (room.players.length >= 4 || room.gameStarted) {
+      socket.emit('roomFull');
+      return;
+    }
 
     const player = { id: socket.id, name: playerName || 'Anh Em', hand: [], ready: false };
     room.players.push(player);
 
     socket.emit('youJoined', { myIndex: room.players.length - 1 });
+
     io.to(roomId).emit('roomUpdate', {
       names: room.players.map(p => p.name),
-      ready: room.players.map((p,i) => p.ready ? i : -1).filter(x=>x>=0),
+      ready: room.players.map((p,i) => p.ready ? i : -1).filter(x => x >= 0),
       count: room.players.length
     });
   });
@@ -88,19 +99,20 @@ io.on('connection', socket => {
       player.ready = !player.ready;
       io.to(roomId).emit('roomUpdate', {
         names: room.players.map(p => p.name),
-        ready: room.players.map((p,i) => p.ready ? i : -1).filter(x=>x>=0),
+        ready: room.players.map((p,i) => p.ready ? i : -1).filter(x => x >= 0),
         count: room.players.length
       });
     }
   });
 
+  // NÚT BẮT ĐẦU VÁN – CHỈ NGƯỜI ĐẦU TIÊN ĐƯỢC BẤM
   socket.on('startGame', ({roomId}) => {
     const room = rooms[roomId];
     if (!room || room.players.length < 2 || room.gameStarted) return;
     const allReady = room.players.every(p => p.ready);
     if (!allReady || room.players[0].id !== socket.id) return;
 
-    // === BẮT ĐẦU VÁN MỚI ===
+    // === CHỈ CHIA ĐÚNG 13 LÁ/NGƯỜI (CHUẨN LUẬT TIẾN LÊN MIỀN NAM) ===
     room.gameStarted = true;
     room.currentTurn = 0;
     room.playedCards = [];
@@ -108,16 +120,17 @@ io.on('connection', socket => {
     room.skippedCount = 0;
 
     const deck = createDeck();
-    const playerCount = room.players.length;
-    const cardsPerPlayer = playerCount === 2 ? 20 : playerCount === 3 ? 17 : 13;
 
+    // Chia 13 lá cho mỗi người, còn dư thì bỏ
     room.players.forEach(p => p.hand = []);
-    for (let i = 0; i < cardsPerPlayer; i++) {
-      room.players.forEach(p => p.hand.push(deck.pop()));
+    for (let i = 0; i < 13; i++) {
+      room.players.forEach(p => {
+        if (deck.length > 0) p.hand.push(deck.pop());
+      });
     }
     room.players.forEach(p => p.hand.sort(cardValue));
 
-    // tìm người có 3 bích
+    // Tìm người có 3 bích để đánh trước
     for (let i = 0; i < room.players.length; i++) {
       if (room.players[i].hand.includes('3S')) {
         room.currentTurn = i;
@@ -142,7 +155,7 @@ io.on('connection', socket => {
     const playerIdx = room.players.findIndex(p => p.id === socket.id);
     if (playerIdx !== room.currentTurn) return;
 
-    if (!isValidPlay(cards, room.playedCards, room.players.length)) return;
+    if (!isValidPlay(cards, room.playedCards)) return;
 
     const player = room.players[playerIdx];
     player.hand = player.hand.filter(c => !cards.includes(c));
@@ -156,13 +169,17 @@ io.on('connection', socket => {
       io.to(roomId).emit('gameOver', {winner: player.name});
       room.gameStarted = false;
       room.players.forEach(p => p.ready = false);
-      io.to(roomId).emit('roomUpdate', {names: room.players.map(p=>p.name), ready: [], count: room.players.length});
+      io.to(roomId).emit('roomUpdate', {
+        names: room.players.map(p => p.name),
+        ready: [],
+        count: room.players.length
+      });
       return;
     }
 
     room.currentTurn = (room.currentTurn + 1) % room.players.length;
     io.to(roomId).emit('turnChanged', {currentTurn: room.currentTurn});
-    io.to(roomId).emit('updateCardsLeft', {cardsLeft: room.players.map(p=>p.hand.length)});
+    io.to(roomId).emit('updateCardsLeft', {cardsLeft: room.players.map(p => p.hand.length)});
   });
 
   socket.on('skipTurn', ({roomId}) => {
@@ -184,12 +201,15 @@ io.on('connection', socket => {
   socket.on('leaveRoom', ({roomId}) => {
     if (!rooms[roomId]) return;
     rooms[roomId].players = rooms[roomId].players.filter(p => p.id !== socket.id);
-    if (rooms[roomId].players.length === 0) delete rooms[roomId];
-    else io.to(roomId).emit('roomUpdate', {
-      names: rooms[roomId].players.map(p=>p.name),
-      ready: rooms[roomId].players.map((p,i)=>p.ready?i:-1).filter(x=>x>=0),
-      count: rooms[roomId].players.length
-    });
+    if (rooms[roomId].players.length === 0) {
+      delete rooms[roomId];
+    } else {
+      io.to(roomId).emit('roomUpdate', {
+        names: rooms[roomId].players.map(p => p.name),
+        ready: rooms[roomId].players.map((p,i) => p.ready ? i : -1).filter(x => x >= 0),
+        count: rooms[roomId].players.length
+      });
+    }
     socket.leave(roomId);
   });
 
@@ -203,4 +223,7 @@ io.on('connection', socket => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server chạy ngon tại port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`CHÍ DŨNG CLUB SERVER ĐANG CHẠY NGON TẠI PORT ${PORT}`);
+  console.log(`Link: https://tienlen-multi-simple.onrender.com`);
+});
