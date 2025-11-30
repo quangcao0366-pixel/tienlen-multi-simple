@@ -136,6 +136,12 @@ function startNewGame(roomId) {
         room.currentTurn = i;
         break;
       }
+      room.players.forEach(p => {
+  if (p) p.cardsLeft = p.hand.length;
+});
+io.to(roomId).emit('updateCardsLeft', {
+  cardsLeft: room.players.map(p => p ? p.cardsLeft : 13)
+});
     }
   } else {
     // Các ván sau: người thắng ván trước đánh trước
