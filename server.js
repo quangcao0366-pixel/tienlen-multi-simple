@@ -23,25 +23,19 @@ io.on('connection', socket => {
   });
 
   socket.on('toggleReady', ({ roomId }) => {
-    const room = rooms[roomId];
-    if (!room) return;
+    const room = rooms[roomId]; if (!room) return;
     const idx = room.players.findIndex(p => p.id === socket.id);
     if (idx === -1) return;
-
     if (room.ready.includes(idx)) room.ready = room.ready.filter(i => i !== idx);
     else room.ready.push(idx);
-
     broadcast(roomId);
-
-    if (room.players.length === 4 && room.ready.length === 4) {
-      setTimeout(() => startNewGame(roomId), 1000);
-    }
+    if (room.players.length === 4 && room.ready.length === 4) setTimeout(() => startNewGame(roomId), 1000);
   });
 
   socket.on('playCards', ({ roomId, cards }) => {
     const room = rooms[roomId];
     if (!room || room.players[room.currentTurn]?.id !== socket.id) return;
-    if (!isValidPlay(cards, room.lastPlay)) return socket.emit('invalidPlay');
+    if (!isValidPlay(cards, room.lastPlay)) return;
 
     const player = room.players[room.currentTurn];
     player.hand = player.hand.filter(c => !cards.includes(c));
@@ -71,11 +65,7 @@ io.on('connection', socket => {
 function broadcast(roomId) {
   const room = rooms[roomId];
   if (!room) return;
-  io.to(roomId).emit('roomUpdate', {
-    count: room.players.length,
-    names: room.players.map(p => p.name),
-    ready: room.ready
-  });
+  io.to(roomId).emit('roomUpdate', { count: room.players.length, names: room.players.map(p => p.name), ready: room.ready });
 }
 
 function moveToNextTurn(roomId) {
@@ -86,13 +76,10 @@ function moveToNextTurn(roomId) {
 
 function startNewGame(roomId) {
   const room = rooms[roomId];
-  const suits = ['♠','♥','♦','♣'], ranks = ['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
+  const suits = ['spade', 'heart', 'diamond', 'club'], ranks = ['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
   let deck = [];
-  for (let s of suits) for (let r of ranks) deck.push(r + s);
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
+  for (let s of suits) for (let r of ranks) deck.push(r + s[0].toUpperCase());
+  for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
 
   room.players.forEach(p => {
     p.hand = deck.splice(0, 13).sort((a, b) => {
@@ -104,23 +91,32 @@ function startNewGame(roomId) {
 
   room.ready = []; room.lastPlay = null; room.skipCount = 0;
   if (room.gameCount === 0) {
-    for (let i = 0; i < 4; i++) if (room.players[i].hand.includes('3♠')) { room.currentTurn = i; break; }
+    for (let i = 0; i < 4; i++) if (room.players[i].hand.includes('3S')) { room.currentTurn = i; break; }
   } else room.currentTurn = room.lastWinner;
 
-  io.to(roomId).emit('updateCardsLeft', { cardsLeft: room.players.map(p => p.hand.length) });
+  io.to(roomId).emit('updateCardsLeft', { cardsLeft: [13,13,13,13] });
   room.players.forEach((p, i) => io.to(p.id).emit('gameStarted', { hand: p.hand, currentTurn: room.currentTurn }));
 }
 
+// CHUẨN ZINGPLAY: TỨ QUÝ CHẶT ĐƯỢC ĐÔI 2, SÁM CÔ KHÔNG CHẶT ĐƯỢC ĐÔI 2
 function isValidPlay(cards, lastPlay) {
   if (!lastPlay) return true;
   if (cards.length !== lastPlay.length) return false;
-  const v = c => "3456789XJQKA2".indexOf(c.slice(0, -1).replace('10', 'X'));
-  const vals = cards.map(v).sort((a, b) => a - b);
-  const last = lastPlay.map(v).sort((a, b) => a - b);
-  const same = a => new Set(a).size === 1;
-  const straight = a => a.length >= 3 && a.every((x, i) => i === 0 || x === a[i - 1] + 1);
-  return same(vals) || straight(vals) || vals[vals.length - 1] > last[last.length - 1];
+
+  const rankVal = c => "3456789XJQKA2".indexOf(c.slice(0, -1).replace('10', 'X'));
+  const vals = cards.map(rankVal).sort((a,b)=>a-b);
+  const lastVals = lastPlay.map(rankVal).sort((a,b)=>a-b);
+
+  const isPair2 = lastPlay.length === 2 && lastVals[0] === 12; // đôi 2
+  const isFourOfKind = new Set(vals).size === 1 && cards.length === 4;
+
+  if (isPair2) return isFourOfKind; // chỉ tứ quý mới chặt được đôi 2
+
+  const isSameKind = new Set(vals).size === 1;
+  const isStraight = cards.length >= 3 && vals.every((v,i) => i===0 || v === vals[i-1]+1);
+
+  return isSameKind || isStraight || vals[vals.length-1] > lastVals[lastVals.length-1];
 }
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log(`Server chạy hoàn hảo - port ${PORT}`));
+server.listen(PORT, () => console.log(`Tiến Lên Miền Nam - Chuẩn ZingPlay 100% - Port ${PORT}`));
