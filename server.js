@@ -65,12 +65,12 @@ io.on('connection', socket => {
     room.skipCount++;
     moveToNextTurn(roomId);
     if (room.skipCount >= 3 && room.lastPlay) { room.lastPlay = null; room.skipCount = 0; io.to(roomId).emit('newRound'); }
-    io.to(roomId).emit('turnSkipped');
   });
 });
 
 function broadcast(roomId) {
   const room = rooms[roomId];
+  if (!room) return;
   io.to(roomId).emit('roomUpdate', {
     count: room.players.length,
     names: room.players.map(p => p.name),
@@ -88,36 +88,39 @@ function startNewGame(roomId) {
   const room = rooms[roomId];
   const suits = ['♠','♥','♦','♣'], ranks = ['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
   let deck = [];
-  for (let s of suits) for (let r of ranks) deck.push(r+s);
-  for (let i=deck.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
+  for (let s of suits) for (let r of ranks) deck.push(r + s);
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
 
   room.players.forEach(p => {
-    p.hand = deck.splice(0,13).sort((a,b) => {
-      const ra = a.startsWith('10')?'10':a.slice(0,-1);
-      const rb = b.startsWith('10')?'10':b.slice(0,-1);
-      return ranks.indexOf(ra)-ranks.indexOf(rb);
+    p.hand = deck.splice(0, 13).sort((a, b) => {
+      const ra = a.startsWith('10') ? '10' : a.slice(0, -1);
+      const rb = b.startsWith('10') ? '10' : b.slice(0, -1);
+      return ranks.indexOf(ra) - ranks.indexOf(rb);
     });
   });
 
   room.ready = []; room.lastPlay = null; room.skipCount = 0;
-  if (room.gameCount===0) {
-    for(let i=0;i<4;i++) if(room.players[i].hand.includes('3♠')) {room.currentTurn=i;break;}
+  if (room.gameCount === 0) {
+    for (let i = 0; i < 4; i++) if (room.players[i].hand.includes('3♠')) { room.currentTurn = i; break; }
   } else room.currentTurn = room.lastWinner;
 
-  io.to(roomId).emit('updateCardsLeft', { cardsLeft: room.players.map(p=>p.hand.length) });
-  room.players.forEach((p,i) => io.to(p.id).emit('gameStarted', { hand: p.hand, currentTurn: room.currentTurn }));
+  io.to(roomId).emit('updateCardsLeft', { cardsLeft: room.players.map(p => p.hand.length) });
+  room.players.forEach((p, i) => io.to(p.id).emit('gameStarted', { hand: p.hand, currentTurn: room.currentTurn }));
 }
 
-function isValidPlay(cards,lastPlay){
-  if(!lastPlay) return true;
-  if(cards.length!==lastPlay.length) return false;
-  const v=c=> "3456789XJQKA2".indexOf(c.slice(0,-1).replace('10','X'));
-  const vals=cards.map(v).sort((a,b)=>a-b);
-  const last=lastPlay.map(v).sort((a,b)=>a-b);
-  const same=a=>new Set(a).size===1;
-  const straight=a=>a.length>=3&&a.every((x,i)=>i===0||x===a[i-1]+1);
-  return same(vals)||straight(vals)||(vals[vals.length-1]>last[last.length-1]);
+function isValidPlay(cards, lastPlay) {
+  if (!lastPlay) return true;
+  if (cards.length !== lastPlay.length) return false;
+  const v = c => "3456789XJQKA2".indexOf(c.slice(0, -1).replace('10', 'X'));
+  const vals = cards.map(v).sort((a, b) => a - b);
+  const last = lastPlay.map(v).sort((a, b) => a - b);
+  const same = a => new Set(a).size === 1;
+  const straight = a => a.length >= 3 && a.every((x, i) => i === 0 || x === a[i - 1] + 1);
+  return same(vals) || straight(vals) || vals[vals.length - 1] > last[last.length - 1];
 }
 
-const PORT =skr process.env.PORT || 10000;
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => console.log(`Server chạy hoàn hảo - port ${PORT}`));
