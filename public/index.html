@@ -17,7 +17,7 @@
                   to{text-shadow:0 0 20px #ff0,0 0 40px #ff0,0 0 80px #ff0}}
 
   #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:10}
-  #joinForm h1{font-size:76px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:60px;pointer-events:none}
+  #joinForm h1{font-size:76px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:60px}
   input{padding:20px 35px;width:340px;margin:15px;border-radius:25px;border:none;font-size:24px;background:#fff;color:#000;
         box-shadow:0 10px 30px rgba(0,0,0,0.6);outline:none}
   #joinForm button{padding:24px 100px;background:#ffd700;color:#000;border:none;border-radius:50px;
@@ -57,12 +57,12 @@
   .played-card .suit{font-size:64px;margin-top:-10px}
 
   .name{position:absolute;font-weight:900;font-size:24px;text-shadow:0 0 18px gold}
-  #name0{bottom:150px;left:50%;transform:translateX(-50%)}
+  #name0{bottom:150 inund;left:50%;transform:translateX(-50%)}
   #name1{top:130px;right:70px}#name2{top:65px;left:50%;transform:translateX(-50%)}
   #name3{top:130px;left:70px}
 
   #status{position:absolute;top:30px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:bold;text-shadow:0 0 18px #fff}
-  #readyBtn{position:absolute;bottom:120px;left:left:50%;transform:translateX(-50%);
+  #readyBtn{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);
     padding:26px 120px;background:#d50000;color:#fff;font-size:36px;border:none;border-radius:50px;
     box-shadow:0 18px 50px rgba(0,0,0,0.8);font-weight:900;cursor:pointer}
   #readyBtn.ready{background:#00c853}
@@ -128,11 +128,14 @@ function joinRoom(){
   socket.emit('joinRoom',{roomId,playerName:name});
 }
 
-socket.on('youJoined',()=>{myIndex=d.myIndex;
+/* ĐÃ SỬA CHÍNH XÁC 2 DÒNG NÀY – BÂY GIỜ VÀO PHÒNG NGAY 100% */
+socket.on('youJoined', d => {
+  myIndex = d.myIndex;
   document.getElementById('joinForm').style.display='none';
   document.getElementById('gameArea').style.display='block';
   document.getElementById('readyBtn').style.display='block';
 });
+/* ---------------------------------------------------- */
 
 socket.on('roomUpdate',d=>{
   players=d.names||[]; readyList=d.ready||[];
