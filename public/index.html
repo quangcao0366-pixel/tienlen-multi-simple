@@ -16,9 +16,9 @@
     font-weight:900;border-radius:50px;border:none;cursor:pointer;z-index:9999;display:none;
     box-shadow:0 4px 15px rgba(255,23,68,0.6)}
 
-  #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:100%}
+  #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:100%;max-width:400px}
   #joinForm h1{font-size:72px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:50px}
-  input, #joinForm button{width:80vw;max-width:400px;padding:18px 20px;margin:10px auto;display:block;
+  input, #joinForm button{width:100%;padding:18px 20px;margin:12px 0;display:block;
     border-radius:30px;border:none;font-size:22px}
   input{background:#fff;color:#000;outline:none}
   #joinForm button{background:#ffd700;color:#000;font-weight:900;cursor:pointer}
@@ -30,8 +30,8 @@
     width:90vmin;height:75vmin;background:radial-gradient(#1e8c3a,#0a3d1a);
     border-radius:50%;border:12px solid #ffd700;box-shadow:0 0 100px rgba(0,255,0,0.6)}
 
-  .hand{position:absolute;display:flex;justify-content:center;align-items:flex-end}
-  #hand0{bottom:2vh;left:50%;transform:translateX(-50%);gap:0.6vmin;padding:0 2vmin;height:22vh;flex-wrap:nowrap}
+  .hand{position:absolute;display:flex;justify-content:center;align-items:flex-end;flex-wrap:nowrap}
+  #hand0{bottom:2vh;left:50%;transform:translateX(-50%);gap:0.6vmin;padding:0 2vmin;height:22vh}
   #hand1{top:4vh;right:4vw;flex-direction:column;gap:0.6vmin}
   #hand2{top:4vh;left:50%;transform:translateX(-50%);gap:0.6vmin}
   #hand3{top:4vh;left:4vw;flex-direction:column;gap:0.6vmin}
@@ -76,35 +76,24 @@
     box-shadow:0 10px 30px rgba(0,0,0,0.7)}
   .controls button:disabled{opacity:0.5}
 
-  /* ĐẢM BẢO 13 LÁ LUÔN HIỂN THỊ ĐẦY ĐỦ TRÊN MỌI MOBILE */
-  @media (max-width: 768px) {
-    .logo{font-size:32px;top:10px;left:10px}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  @media (max-width:768px){
+    .logo{font-size:32px}
     #leaveBtn{top:10px;right:10px;padding:10px 20px;font-size:16px}
     #joinForm h1{font-size:48px}
     #status{font-size:18px;top:8px}
     .card{width:7.8vmin;height:11.2vmin}
-    .card .rank{font-size:2.5vmin}
-    .card .suit{font-size:4.3vmin}
     .card.selected{transform:translateY(-9vh)}
     #hand0{gap:0.4vmin;height:21vh}
-    #playedArea{width:70vmin;height:30vmin;gap:1.5vmin}
-    .played-card{width:10vmin;height:13.5vmin}
   }
-
-  @media (max-width: 480px) {
+  @media (max-width:480px){
     .card{width:7.5vmin;height:10.8vmin}
-    .card .rank{font-size:2.3vmin}
-    .card .suit{font-size:4vmin}
     #hand0{gap:0.3vmin;height:20vh}
-    .controls button{font-size:3.5vmin;padding:2vh 8vw}
-    #readyBtn{font-size:4vmin;padding:2vh 10vw}
   }
-
-  /* Mobile ngang */
-  @media (orientation: landscape) and (max-height: 600px) {
+  @media (orientation:landscape) and (max-height:600px){
     .table{height:85vh;width:80vw}
     #hand0{height:18vh}
-    .card.selected{transform:translateY(-8vh)}
   }
 </style>
 </head>
@@ -209,7 +198,7 @@ socket.on('turnChanged',d=>{currentTurn=d.currentTurn; updateTurn();});
 
 function toggleReady(){socket.emit('toggleReady',{roomId});}
 function leaveRoom(){
-  if(confirm('Thoát khỏi phòng này?')) {
+  if(confirm('Thoát khỏi phòng này?')){
     socket.emit('leaveRoom',{roomId});
     location.reload();
   }
@@ -262,7 +251,6 @@ function updateTurn(){
     ?'<span style="color:#ff1744;font-size:6vmin;animation:blink 1s infinite">ĐẾN LƯỢT BẠN!</span>'
     :`Đợi <strong>${players[currentTurn]||'???'}</strong> đánh...`;
 }
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
 </script>
 </body>
 </html>
