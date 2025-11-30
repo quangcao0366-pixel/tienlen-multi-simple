@@ -15,11 +15,14 @@ io.on('connection', socket => {
     if (!rooms[roomId]) {
       rooms[roomId] = { players: [], currentTurn: 0, lastPlay: null, skipCount: 0, gameCount: 0, lastWinner: null };
     }
-    if (rooms[roomId].players.length >= 4) return socket.emit('errorMsg', 'Phòng đầy!');
+    if (rooms[roomId].players.length >= 4) {
+      return socket.emit('errorMsg', 'Phòng đã đầy!');
+    }
 
-    const player = { id: socket.id, name: playerName, hand: [] };
+    const player = { id: socket.id, name: playerName || `Người ${rooms[roomId].players.length + 1}`, hand: [] };
     rooms[roomId].players.push(player);
     socket.join(roomId);
+
     const myIndex = rooms[roomId].players.length - 1;
     socket.emit('youJoined', { myIndex });
 
@@ -28,14 +31,18 @@ io.on('connection', socket => {
       names: rooms[roomId].players.map(p => p.name)
     });
 
-    if (rooms[roomId].players.length === 4) startNewGame(roomId);
+    if (rooms[roomId].players.length === 4) {
+      startNewGame(roomId);
+    }
   });
 
   socket.on('playCards', ({ roomId, cards }) => {
     const room = rooms[roomId];
     if (!room || room.players[room.currentTurn]?.id !== socket.id) return;
 
-    if (!isValidPlay(cards, room.lastPlay)) return socket.emit('invalidPlay');
+    if (!isValidPlay(cards, room.lastPlay)) {
+      return socket.emit('invalidPlay');
+    }
 
     const player = room.players[room.currentTurn];
     player.hand = player.hand.filter(c => !cards.includes(c));
@@ -59,14 +66,17 @@ io.on('connection', socket => {
       setTimeout(() => startNewGame(roomId), 6000);
       return;
     }
+
     moveToNextTurn(roomId);
   });
 
   socket.on('skipTurn', ({ roomId }) => {
     const room = rooms[roomId];
     if (!room || room.players[room.currentTurn]?.id !== socket.id) return;
+
     room.skipCount++;
     moveToNextTurn(roomId);
+
     if (room.skipCount >= 3 && room.lastPlay) {
       room.lastPlay = null;
       room.skipCount = 0;
@@ -87,19 +97,28 @@ function startNewGame(roomId) {
   const suits = ['♠', '♥', '♦', '♣'];
   const ranks = ['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
   let deck = [];
+
   for (let s of suits) for (let r of ranks) deck.push(r + s);
+
+  // Xào bài
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
 
+  // Chia bài và sắp xếp đúng thứ tự (đã fix lỗi cú pháp)
   room.players.forEach(p => {
-    p.hand = deck.splice(0, 13).sort((a, b) => ranks.indexOf(a.slice(0,-1).replace('10','10')) - ranks.indexOf(b.slice(0,-1).replace('10','10')));
+    p.hand = deck.splice(0, 13).sort((a, b) => {
+      const ra = a.startsWith('10') ? '10' : a.slice(0, -1);
+      const rb = b.startsWith('10') ? '10' : b.slice(0, -1);
+      return ranks.indexOf(ra) - ranks.indexOf(rb);
+    });
   });
 
   room.lastPlay = null;
   room.skipCount = 0;
 
+  // Quyết định người đánh đầu
   if (room.gameCount === 0) {
     for (let i = 0; i < 4; i++) {
       if (room.players[i].hand.includes('3♠')) {
@@ -108,12 +127,14 @@ function startNewGame(roomId) {
       }
     }
   } else {
-    room.currentTurn = room.lastWinner;
+    room.currentTurn = room.lastWinner ?? 0;
   }
 
+  // Gửi số bài còn lại ngay từ đầu
   const cardsLeft = room.players.map(p => p.hand.length);
   io.to(roomId).emit('updateCardsLeft', { cardsLeft });
 
+  // Gửi bài cho từng người chơi
   room.players.forEach((p, i) => {
     io.to(p.id).emit('gameStarted', {
       hand: p.hand,
@@ -125,16 +146,21 @@ function startNewGame(roomId) {
 function isValidPlay(cards, lastPlay) {
   if (!lastPlay) return true;
   if (cards.length !== lastPlay.length) return false;
-  const rankVal = c => "3456789XJQKA2".indexOf(c.slice(0,-1).replace('10','X'));
-  const vals = cards.map(rankVal).sort((a,b)=>a-b);
-  const lastVals = lastPlay.map(rankVal).sort((a,b)=>a-b);
-  const same = arr => new Set(arr).size === 1;
-  const straight = arr => arr.length >= 3 && arr.every((v,i) => i===0 || v === arr[i-1]+1);
-  if (same(vals) && cards.length >= 3) return true;
+
+  const rankVal = c => "3456789XJQKA2".indexOf(c.slice(0, -1).replace('10', 'X'));
+  const vals = cards.map(rankVal).sort((a,b) => a-b);
+  const lastVals = lastPlay.map(rankVal).sort((a,b) => a-b);
+
+  const sameKind = arr => new Set(arr).size === 1;
+  const straight = arr => arr.length >= 3 && arr.every((v,i) => i === 0 || v === arr[i-1] + 1);
+
+  if (sameKind(vals) && cards.length >= 3) return true;
   if (straight(vals)) return true;
   if (vals[vals.length-1] > lastVals[lastVals.length-1]) return true;
   return false;
 }
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log(`Tiến Lên Miền Nam 2025 - Chạy mượt vĩnh viễn trên port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`Tiến Lên Miền Nam Multiplayer - ĐÃ CHẠY HOÀN HẢO trên port ${PORT}`);
+});
