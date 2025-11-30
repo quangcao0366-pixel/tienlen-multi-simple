@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>CHÍ DŨNG CLUB - Tiến Lên Miền Nam</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
@@ -16,11 +16,9 @@
   @keyframes neon{from{text-shadow:0 0 10px #ff0,0 0 20px #ff0,0 0 40px #ff0}
                   to{text-shadow:0 0 20px #ff0,0 0 40px #ff0,0 0 80px #ff0}}
 
-  #leaveBtn{
-    position:fixed;top:18px;left:280px;padding:12px 32px;background:#ff1744;color:#fff;
+  #leaveBtn{position:fixed;top:18px;left:280px;padding:12px 32px;background:#ff1744;color:#fff;
     font-size:20px;font-weight:900;border:none;border-radius:50px;cursor:pointer;
-    box-shadow:0 8px 25px rgba(255,23,68,0.6);z-index:9999;display:none;transition:all .3s
-  }
+    box-shadow:0 8px 25px rgba(255,23,68,0.6);z-index:9999;display:none;transition:all .3s}
   #leaveBtn:hover{transform:scale(1.1);background:#f50057}
 
   #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:10;width:100%}
@@ -37,7 +35,7 @@
     box-shadow:0 0 130px rgba(0,255,0,0.6),inset 0 0 100px rgba(0,0,0,0.8);border:14px solid #ffd700}
 
   .hand{position:absolute;display:flex;justify-content:center;align-items:flex-end}
-  #hand0{bottom:15px;left:50%;transform:translateX(-50%);gap:9px;padding:0 40px;max-width:97vw;overflow-x:auto;height:210px;/* Responsive height */}
+  #hand0{bottom:15px;left:50%;transform:translateX(-50%);gap:9px;padding:0 40px;max-width:97vw;overflow-x:auto;height:210px}
   #hand1{top:35px;right:55px;flex-direction:column;gap:7px}
   #hand2{top:35px;left:50%;transform:translateX(-50%);gap:9px}
   #hand3{top:35px;left:55px;flex-direction:column;gap:7px}
@@ -84,58 +82,66 @@
 
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 
-  /* RESPONSIVE MEDIA QUERIES - MOBILE FRIENDLY 100% */
+  /* RESPONSIVE MOBILE - SỬA ĐẸP HƠN, THẤY ĐẦY ĐỦ BÀI, KHÔNG RỐI MẮT */
   @media screen and (max-width: 768px) {
-    .logo{font-size:28px;top:10px;left:10px}
-    #joinForm h1{font-size:48px;margin-bottom:30px}
-    input{width:90vw;font-size:20px;padding:16px}
-    #joinForm button{width:90vw;padding:20px 40px;font-size:26px}
+    .logo{font-size:32px;top:10px;left:15px}
+    #joinForm h1{font-size:52px;margin-bottom:40px}
+    input{width:85vw;font-size:20px;padding:16px 20px}
+    #joinForm button{width:85vw;padding:18px 30px;font-size:26px}
 
-    .table{width:95vw;height:70vh;border-radius:40%;border-width:8px}
-    #hand0{gap:5px;padding:0 10px;height:180px}
-    .card{width:60px;height:90px}
+    .table{width:95vw;height:75vh;border-radius:40%;border-width:8px}
+    #hand0{gap:6px;padding:0 20px;height:190px;bottom:10px}  /* Tăng height, giảm gap */
+    .card{width:64px;height:95px;margin-bottom:8px}  /* Card nhỏ hơn */
     .card .rank{font-size:26px}
-    .card .suit{font-size:42px}
-    .card.selected{transform:translateY(-80px)}
-    #playedArea{width:90vw;height:200px;gap:10px}
-    .played-card{width:70px;height:100px}
-    .played-card .rank{font-size:40px}
-    .played-card .suit{font-size:50px}
-    .name{font-size:18px}
-    #status{font-size:24px;top:10px}
-    #readyBtn{padding:20px 60px;font-size:28px;bottom:80px}
-    .controls{gap:10px;bottom:10px}
-    .controls button{padding:18px 40px;font-size:22px}
-    #name0{bottom:120px}
-    #name1{top:100px;right:20px}#name2{top:30px}#name3{top:100px;left:20px}
+    .card .suit{font-size:44px}
+    .card.selected{transform:translateY(-85px)}  /* Nhấc thấp hơn một chút */
+    #playedArea{width:90vw;height:220px;gap:12px}  /* Giảm gap */
+    .played-card{width:80px;height:110px}
+    .played-card .rank{font-size:42px}
+    .played-card .suit{font-size:52px}
+    .name{font-size:20px}
+    #status{font-size:26px;top:15px}
+    #readyBtn{padding:20px 60px;font-size:30px;bottom:90px}
+    .controls{gap:20px;bottom:15px}
+    .controls button{padding:20px 50px;font-size:24px}
+    #name0{bottom:130px}
+    #name1{top:110px;right:30px}#name2{top:40px}#name3{top:110px;left:30px}
+    #leaveBtn{left:220px;font-size:18px;padding:10px 25px;top:15px}
   }
 
   @media screen and (max-width: 480px) {
-    .logo{font-size:24px}
-    #joinForm h1{font-size:36px}
-    input{width:95vw;font-size:18px;padding:14px}
-    #joinForm button{width:95vw;font-size:22px;padding:18px 30px}
-    .table{width:98vw;height:65vh;border-radius:30%}
-    #hand0{gap:3px;padding:0 5px;height:160px}
-    .card{width:50px;height:75px}
+    .logo{font-size:28px}
+    #joinForm h1{font-size:40px}
+    input{width:92vw;font-size:18px;padding:14px 18px}
+    #joinForm button{width:92vw;font-size:22px;padding:16px 25px}
+    .table{width:98vw;height:70vh;border-radius:30%}
+    #hand0{gap:4px;padding:0 10px;height:170px;bottom:5px}
+    .card{width:56px;height:85px}
     .card .rank{font-size:22px}
-    .card .suit{font-size:36px}
-    .card.selected{transform:translateY(-65px)}
-    #playedArea{width:95vw;height:180px;gap:8px}
-    .played-card{width:60px;height:85px}
-    .played-card .rank{font-size:32px}
-    .played-card .suit{font-size:42px}
+    .card .suit{font-size:38px}
+    .card.selected{transform:translateY(-70px)}
+    #playedArea{width:95vw;height:200px;gap:8px}
+    .played-card{width:70px;height:95px}
+    .played-card .rank{font-size:36px}
+    .played-card .suit{font-size:46px}
     .name{font-size:16px}
-    #status{font-size:20px}
-    #readyBtn{padding:16px 40px;font-size:24px}
-    .controls{gap:5px}
-    .controls button{padding:14px 30px;font-size:18px}
+    #status{font-size:22px;top:10px}
+    #readyBtn{padding:18px 40px;font-size:26px}
+    .controls{gap:10px}
+    .controls button{padding:16px 30px;font-size:20px}
   }
 
-  /* Landscape mode cho tablet */
+  /* Landscape cho tablet/mobile ngang */
   @media screen and (max-height: 600px) and (orientation: landscape) {
     .table{height:85vh;width:75vw}
     #hand0{height:140px}
+    #playedArea{height:250px}
+  }
+
+  /* High DPI screens (Retina) */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .card{border-width:2px}
+    .played-card{border-radius:12px}
   }
 </style>
 </head>
