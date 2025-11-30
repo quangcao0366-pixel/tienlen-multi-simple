@@ -8,33 +8,34 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:Arial;background:#0b6623;color:white;height:100vh;display:flex;flex-direction:column;overflow:hidden}
   h1{text-align:center;padding:15px;font-size:32px;color:#ffca28;text-shadow:0 0 20px gold}
-  
-  #joinForm{text-align:center;padding:30px;background:rgba(0,0,0,0.5)}
+
+  #joinForm{text-align:center;padding:30px;background:rgba(0,0,0,0.4)}
   input{padding:14px 20px;margin:8px;width:220px;font-size:18px;border-radius:10px;border:none}
   button{padding:14px 40px;font-size:20px;background:#ffca28;border:none;border-radius:10px;cursor:pointer;font-weight:bold}
 
-  #gameArea{flex:1;display:none;flex-direction:column;padding:10px}
+  #gameArea{flex:1;display:none;flex-direction:column;padding:10px 20px 80px 20px;position:relative}
   #status{text-align:center;font-size:36px;margin:10px 0;height:60px;color:#ffca28;font-weight:bold}
-  
-  #table{width:720px;height:460px;margin:20px auto;background:radial-gradient(#1b5e20,#0b6623);border:18px solid #8B4513;border-radius:50%;position:relative;box-shadow:inset 0 0 80px #000,0 0 60px #ffca28}
+
+  #table{width:720px;height:420px;margin:20px auto;background:radial-gradient(#1b5e20,#0b6623);border:18px solid #8B4513;border-radius:50%;position:relative;box-shadow:inset 0 0 80px #000,0 0 60px #ffca28}
   #playedArea{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-wrap:wrap;gap:20px;justify-content:center;width:560px;padding:20px}
+
   .played-card{font-size:62px;background:white;color:black;padding:14px 18px;border-radius:14px;box-shadow:0 15px 40px #000;animation:fly 0.8s ease-out;transform:rotate(var(--r))}
   @keyframes fly{from{transform:translateY(800px) scale(0);opacity:0}to{opacity:1}}
 
-  .seat{position:absolute;text-align:center;font-weight:bold;font-size:23px}
-  #seat0{bottom:10px;left:50%;transform:translateX(-50%)}
-  #seat1{top:20px;left:80px}
-  #seat2{top:20px;right:80px}
-  #seat3{bottom:10px;right:80px}
+  .seat{position:absolute;text-align:center;font-weight:bold;font-size:23px;width:200px}
+  #seat0{bottom:-70px;left:50%;transform:translateX(-50%)}
+  #seat1{top:10px;left:40px}
+  #seat2{top:10px;right:40px}
+  #seat3{bottom:-70px;right:40px}
 
-  .hand-container{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:12px}
-  .card{background:white;color:black;padding:16px 10px;border-radius:12px;width:74px;font-size:24px;cursor:pointer;user-select:none;transition:all .3s;box-shadow:0 8px 16px #000;font-weight:bold}
+  .hand-container{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:10px;max-width:800px}
+  .card{background:white;color:black;padding:16px 10px;border-radius:12px;width:74px;font-size:24px;cursor:pointer;user-select:none;transition:all .3s;box-shadow:0 8px 16px #000;font-weight:bold;position:relative;z-index:2}
   .card.selected{background:#ffd700;transform:translateY(-40px);box-shadow:0 30px 60px gold;z-index:10}
   .card.he{color:red}
-  .card.back{background:#111;color:#555;cursor:default}
+  .card.back{background:#111;color:#555;cursor:default;box-shadow:0 5px 12px #000}
 
-  #controls{text-align:center;margin:25px 0}
-  #controls button{padding:22px 80px;font-size:30px;margin:0 30px;border-radius:16px;background:#ffca28;font-weight:bold}
+  #controls{position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);padding:15px 0;text-align:center;z-index:1000}
+  #controls button{padding:20px 80px;font-size:32px;margin:0 30px;border-radius:16px;background:#ffca28;font-weight:bold;min-width:220px}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 </style>
 </head>
@@ -42,10 +43,8 @@
 <h1>Tiến Lên Miền Nam Multiplayer</h1>
 
 <div id="joinForm">
-  <input id="roomId" placeholder="ID phòng (vd: 123)" value="123">
-  <br>
-  <input id="playerName" placeholder="Tên của bạn">
-  <br><br>
+  <input id="roomId" placeholder="ID phòng (vd: 123)" value="123"><br><br>
+  <input id="playerName" placeholder="Tên của bạn"><br><br>
   <button onclick="joinRoom()">VÀO PHÒNG NGAY</button>
 </div>
 
@@ -58,7 +57,7 @@
 
   <div class="seat" id="seat1"><div id="name1">Trái</div><div class="hand-container" id="hand1"></div></div>
   <div class="seat" id="seat2"><div id="name2">Đối diện</div><div class="hand-container" id="hand2"></div></div>
-  <div class="seat" id="seat3"><div id="name3">Phải</div><div class="hand-container" id="hand3"></div></div>
+  <div class="seat" id="seat3"><div id="hand3"></div></div>
   <div class="seat" id="seat0"><div id="name0">Bạn</div><div class="hand-container" id="hand0"></div></div>
 
   <div id="controls">
@@ -73,14 +72,12 @@ let hand = [], selected = [], myIndex = -1, currentTurn = -1, roomId = '123', pl
 
 const socket = io();
 
-// === VÀO PHÒNG ===
 function joinRoom() {
   roomId = document.getElementById('roomId').value.trim() || '123';
   const name = document.getElementById('playerName').value.trim() || 'Người chơi';
   socket.emit('joinRoom', { roomId, playerName: name });
 }
 
-// === SOCKET EVENTS ===
 socket.on('youJoined', data => {
   myIndex = data.myIndex;
   document.getElementById('joinForm').style.display = 'none';
@@ -90,7 +87,7 @@ socket.on('youJoined', data => {
 socket.on('roomUpdate', data => {
   players = data.names || [];
   document.getElementById('status').innerHTML = `Phòng ${roomId} • ${data.count}/4 người`;
-  updateAllNames();
+  updateNames();
 });
 
 socket.on('gameStarted', data => {
@@ -99,14 +96,12 @@ socket.on('gameStarted', data => {
   players = data.players || players;
   selected = [];
   document.getElementById('playedArea').innerHTML = '<div style="color:#ccc;font-size:34px">Bàn bài trống</div>';
-  renderMyHand();
-  renderOtherHands();
+  renderHands();
   updateTurn();
-  updateAllNames();
+  updateNames();
 });
 
 socket.on('cardsPlayed', data => {
-  // Cập nhật bàn
   const area = document.getElementById('playedArea');
   area.innerHTML = '';
   data.cards.forEach(c => {
@@ -118,53 +113,51 @@ socket.on('cardsPlayed', data => {
     area.appendChild(el);
   });
 
-  // Cập nhật tay mình nếu mình vừa đánh
   if (data.playerIndex === myIndex) {
     hand = hand.filter(card => !data.cards.includes(card));
     selected = [];
-    renderMyHand();
   }
-  renderOtherHands();
+  renderHands();
   updateTurn();
-  updateAllNames();
+  updateNames();
 });
 
-socket.on('turnChanged', data => { currentTurn = data.currentTurn; updateTurn(); updateAllNames(); });
-socket.on('turnSkipped', data => { currentTurn = data.nextTurn; updateTurn(); updateAllNames(); });
+socket.on('turnChanged', d => { currentTurn = d.currentTurn; updateTurn(); updateNames(); });
+socket.on('turnSkipped', d => { currentTurn = d.nextTurn; updateTurn(); updateNames(); });
 socket.on('newRound', () => document.getElementById('playedArea').innerHTML = '<div style="color:gold;font-size:44px">VÒNG MỚI!</div>');
-socket.on('gameOver', data => alert(`${data.winner} THẮNG CỤC!`));
+socket.on('gameOver', d => alert(`${d.winner} THẮNG CỤC!`));
 
-// === RENDER ===
-function renderMyHand() {
+function renderHands() {
+  // Tay mình
   document.getElementById('hand0').innerHTML = hand.map(c => {
     const red = ['♥','♦'].includes(c.slice(-1)) ? 'he' : '';
     return `<div class="card ${red} ${selected.includes(c)?'selected':''}" onclick="toggle('${c}')">${c}</div>`;
   }).join('');
-}
 
-function renderOtherHands() {
-  for (let i = 1; i <= 3; i++) {
+  // Tay người khác - chỉ hiện khi đã có người
+  for (let i = 1; i<=3; i++) {
     const count = players[i-1] ? 13 : 0;
     document.getElementById(`hand${i}`).innerHTML = Array(count).fill('<div class="card back">?</div>').join('');
   }
 }
 
-function updateAllNames() {
+function updateNames() {
   for (let i = 0; i < 4; i++) {
-    const el = document.getElementById(`name${i === 0 ? '0' : i}`);
-    el.innerText = i === myIndex ? 'Bạn' : (players[i] || 'Trống');
+    const el = document.getElementById(`name${i===0?'0':i}`);
+    el.innerText = i === myIndex ? 'Bạn' : (players[i] || '');
     el.style.color = i === currentTurn ? '#ff1744' : '#ffca28';
+    el.style.display = players[i] || i===myIndex ? 'block' : 'none';
   }
 }
 
 function toggle(card) {
-  selected = selected.includes(card) ? selected.filter(x => x !== card) : [...selected, card];
-  renderMyHand();
-  document.getElementById('playBtn').disabled = selected.length === 0 || myIndex !== currentTurn;
+  selected = selected.includes(card) ? selected.filter(x=>x!==card) : [...selected, card];
+  renderHands();
+  document.getElementById('playBtn').disabled = selected.length===0 || myIndex !== currentTurn;
 }
 
 function playSelected() {
-  if (selected.length === 0 || myIndex !== currentTurn) return;
+  if (selected.length===0 || myIndex !== currentTurn) return;
   socket.emit('playCards', { roomId, cards: selected });
 }
 
@@ -175,7 +168,7 @@ function skipTurn() {
 
 function updateTurn() {
   const myTurn = myIndex === currentTurn;
-  document.getElementById('playBtn').disabled = !myTurn || selected.length === 0;
+  document.getElementById('playBtn').disabled = !myTurn || selected.length===0;
   document.getElementById('skipBtn').disabled = !myTurn;
   document.getElementById('status').innerHTML = myTurn
     ? '<span style="color:#ff1744;animation:blink 1s infinite;font-size:40px">ĐẾN LƯỢT BẠN – ĐÁNH ĐI!</span>'
