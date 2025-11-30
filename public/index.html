@@ -23,11 +23,11 @@
   }
   #leaveBtn:hover{transform:scale(1.1);background:#f50057}
 
-  #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:10}
+  #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:10;width:100%}
   #joinForm h1{font-size:76px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:60px}
-  input{padding:20px 35px;width:340px;margin:15px;border-radius:25px;border:none;font-size:24px;background:#fff;color:#000;
+  input{padding:20px 35px;width:340px;max-width:80vw;margin:15px;border-radius:25px;border:none;font-size:24px;background:#fff;color:#000;
         box-shadow:0 10px 30px rgba(0,0,0,0.6);outline:none}
-  #joinForm button{padding:24px 100px;background:#ffd700;color:#000;border:none;border-radius:50px;
+  #joinForm button{padding:24px 100px;max-width:90vw;background:#ffd700;color:#000;border:none;border-radius:50px;
         font-weight:900;font-size:32px;cursor:pointer;box-shadow:0 15px 40px rgba(0,0,0,0.7);transition:.3s}
   #joinForm button:hover{transform:scale(1.05)}
 
@@ -37,30 +37,17 @@
     box-shadow:0 0 130px rgba(0,255,0,0.6),inset 0 0 100px rgba(0,0,0,0.8);border:14px solid #ffd700}
 
   .hand{position:absolute;display:flex;justify-content:center;align-items:flex-end}
-  
-  /* SỬA DỨT ĐIỂM: KHÔNG BAO GIỜ BỊ CẮT NỬA BÀI NỮA */
-  #hand0{
-    bottom:15px;left:50%;transform:translateX(-50%);gap:9px;padding:0 40px;
-    max-width:97vw;overflow:visible !important;height:210px !important;
-  }
-  #hand0::-webkit-scrollbar{display:none}
-
+  #hand0{bottom:15px;left:50%;transform:translateX(-50%);gap:9px;padding:0 40px;max-width:97vw;overflow-x:auto;height:210px;/* Responsive height */}
   #hand1{top:35px;right:55px;flex-direction:column;gap:7px}
   #hand2{top:35px;left:50%;transform:translateX(-50%);gap:9px}
   #hand3{top:35px;left:55px;flex-direction:column;gap:7px}
 
-  .card{
-    width:76px;height:110px;background:#fff;color:#000;border-radius:13px;border:4px solid #000;
+  .card{width:76px;height:110px;background:#fff;color:#000;border-radius:13px;border:4px solid #000;
     box-shadow:0 12px 35px rgba(0,0,0,0.9);position:relative;cursor:pointer;transition:all .3s;
     display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:bold;user-select:none;
-    margin-bottom:10px
-  }
+    margin-bottom:10px}
   .card.he{color:#e91e63}
-  .card.selected{
-    transform:translateY(-105px) !important;
-    box-shadow:0 70px 120px gold !important;
-    z-index:9999 !important;
-  }
+  .card.selected{transform:translateY(-105px);box-shadow:0 70px 120px gold;z-index:999;overflow:visible}
   .card .rank{font-size:32px;margin-bottom:3px}
   .card .suit{font-size:52px}
   .card.back{background:#0a3d1a;border:5px solid #ffd700;
@@ -84,11 +71,9 @@
 
   #status{position:absolute;top:30px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:bold;text-shadow:0 0 18px #fff}
 
-  #readyBtn{
-    position:absolute;bottom:120px;left:50%;transform:translateX(-50%);
+  #readyBtn{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);
     padding:26px 120px;background:#d50000;color:#fff;font-size:36px;border:none;border-radius:50px;
-    box-shadow:0 18px 50px rgba(0,0,0,0.8);font-weight:900;cursor:pointer;display:none
-  }
+    box-shadow:0 18px 50px rgba(0,0,0,0.8);font-weight:900;cursor:pointer;display:none}
   #readyBtn.ready{background:#00c853}
 
   .controls{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:40px}
@@ -98,6 +83,60 @@
   .controls button:disabled{opacity:0.5;cursor:not-allowed}
 
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+  /* RESPONSIVE MEDIA QUERIES - MOBILE FRIENDLY 100% */
+  @media screen and (max-width: 768px) {
+    .logo{font-size:28px;top:10px;left:10px}
+    #joinForm h1{font-size:48px;margin-bottom:30px}
+    input{width:90vw;font-size:20px;padding:16px}
+    #joinForm button{width:90vw;padding:20px 40px;font-size:26px}
+
+    .table{width:95vw;height:70vh;border-radius:40%;border-width:8px}
+    #hand0{gap:5px;padding:0 10px;height:180px}
+    .card{width:60px;height:90px}
+    .card .rank{font-size:26px}
+    .card .suit{font-size:42px}
+    .card.selected{transform:translateY(-80px)}
+    #playedArea{width:90vw;height:200px;gap:10px}
+    .played-card{width:70px;height:100px}
+    .played-card .rank{font-size:40px}
+    .played-card .suit{font-size:50px}
+    .name{font-size:18px}
+    #status{font-size:24px;top:10px}
+    #readyBtn{padding:20px 60px;font-size:28px;bottom:80px}
+    .controls{gap:10px;bottom:10px}
+    .controls button{padding:18px 40px;font-size:22px}
+    #name0{bottom:120px}
+    #name1{top:100px;right:20px}#name2{top:30px}#name3{top:100px;left:20px}
+  }
+
+  @media screen and (max-width: 480px) {
+    .logo{font-size:24px}
+    #joinForm h1{font-size:36px}
+    input{width:95vw;font-size:18px;padding:14px}
+    #joinForm button{width:95vw;font-size:22px;padding:18px 30px}
+    .table{width:98vw;height:65vh;border-radius:30%}
+    #hand0{gap:3px;padding:0 5px;height:160px}
+    .card{width:50px;height:75px}
+    .card .rank{font-size:22px}
+    .card .suit{font-size:36px}
+    .card.selected{transform:translateY(-65px)}
+    #playedArea{width:95vw;height:180px;gap:8px}
+    .played-card{width:60px;height:85px}
+    .played-card .rank{font-size:32px}
+    .played-card .suit{font-size:42px}
+    .name{font-size:16px}
+    #status{font-size:20px}
+    #readyBtn{padding:16px 40px;font-size:24px}
+    .controls{gap:5px}
+    .controls button{padding:14px 30px;font-size:18px}
+  }
+
+  /* Landscape mode cho tablet */
+  @media screen and (max-height: 600px) and (orientation: landscape) {
+    .table{height:85vh;width:75vw}
+    #hand0{height:140px}
+  }
 </style>
 </head>
 <body>
