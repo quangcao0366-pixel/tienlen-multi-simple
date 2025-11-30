@@ -84,11 +84,30 @@
   .controls button:disabled{opacity:0.5}
 
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
-  @media (max-width:768px){.logo{font-size:32px}#leaveBtn{top:10px;right:10px;padding:10px 20px;font-size:16px}
-    #joinForm h1{font-size:48px}#status{font-size:18px;top:8px}
-    .card{width:7.8vmin;height:11.2vmin}.card.selected{transform:translateY(-9vh)}#hand0{gap:0.4vmin;height:21vh}}
-  @media (max-width:480px){.card{width:7.5vmin;height:10.8vmin}#hand0{gap:0.3vmin;height:20vh}}
-  @media (orientation:landscape) and (max-height:600px){.table{height:85vh;width:80vw}#hand0{height:18vh}}
+
+  /* FIX MOBILE: HIỂN THỊ ĐỦ 13 LÁ ĐẸP HOÀN HẢO */
+  @media (max-width:768px){
+    .logo{font-size:32px}
+    #leaveBtn{top:8px;right:8px;padding:8px 16px;font-size:15px}
+    #status{font-size:18px;top:6px}
+    .card{width:7.6vmin;height:10.9vmin}
+    .card .rank{font-size:2.4vmin}
+    .card .suit{font-size:4.1vmin}
+    .card.selected{transform:translateY(-8vh)}
+    #hand0{gap:0.25vmin;height:20vh;padding:0 1vmin}
+    #readyBtn{font-size:4vmin;padding:2vh 10vw}
+    .controls button{font-size:3.6vmin;padding:2vh 8vw}
+  }
+  @media (max-width:480px){
+    .card{width:7.3vmin;height:10.5vmin}
+    .card .rank{font-size:2.2vmin}
+    .card .suit{font-size:3.9vmin}
+    #hand0{gap:0.2vmin;height:19vh}
+  }
+  @media (orientation:landscape) and (max-height:600px){
+    #hand0{height:17vh}
+    .card.selected{transform:translateY(-7vh)}
+  }
 </style>
 </head>
 <body>
