@@ -23,11 +23,11 @@ function createDeck() {
   return deck.sort(() => Math.random() - 0.5);
 }
 
-// Sắp xếp bài theo giá trị
+// Sắp xếp bài trong tay người chơi
 function cardValue(card) {
-  const rank = card.slice(0, -1);
+  const rank = card.slice(0, -1) === '10' ? '10' : card.slice(0, -1);
   const suit = card.slice(-1);
-  return cardValues[rank === '10' ? '10' : rank] * 10 + suitOrder[suit];
+  return cardValues[rank] * 10 + suitOrder[suit];
 }
 
 // Kiểm tra nước bài hợp lệ
@@ -105,30 +105,27 @@ io.on('connection', socket => {
     }
   });
 
-  // NÚT BẮT ĐẦU VÁN – CHỈ NGƯỜI ĐẦU TIÊN ĐƯỢC BẤM
+  // BẮT ĐẦU VÁN – CHỈ NGƯỜI ĐẦU TIÊN ĐƯỢC BẤM
   socket.on('startGame', ({roomId}) => {
     const room = rooms[roomId];
     if (!room || room.players.length < 2 || room.gameStarted) return;
     const allReady = room.players.every(p => p.ready);
     if (!allReady || room.players[0].id !== socket.id) return;
 
-    // === CHỈ CHIA ĐÚNG 13 LÁ/NGƯỜI (CHUẨN LUẬT TIẾN LÊN MIỀN NAM) ===
+    // CHIA ĐÚNG 13 LÁ/NGƯỜI – HOÀN TOÀN NGẪU NHIÊN
     room.gameStarted = true;
     room.currentTurn = 0;
     room.playedCards = [];
     room.lastPlayedBy = null;
     room.skippedCount = 0;
 
-    const deck = createDeck();
+    const fullDeck = createDeck(); // 52 lá trộn ngẫu nhiên
 
-    // Chia 13 lá cho mỗi người, còn dư thì bỏ
-    room.players.forEach(p => p.hand = []);
-    for (let i = 0; i < 13; i++) {
-      room.players.forEach(p => {
-        if (deck.length > 0) p.hand.push(deck.pop());
-      });
-    }
-    room.players.forEach(p => p.hand.sort(cardValue));
+    // Chia đều 13 lá cho từng người chơi
+    room.players.forEach(player => {
+      player.hand = fullDeck.splice(0, 13); // lấy 13 lá đầu tiên
+      player.hand.sort(cardValue); // sắp xếp bài trong tay
+    });
 
     // Tìm người có 3 bích để đánh trước
     for (let i = 0; i < room.players.length; i++) {
@@ -139,11 +136,15 @@ io.on('connection', socket => {
       }
     }
 
-    io.to(roomId).emit('gameStarted', {
-      hand: room.players.find(p => p.id === socket.id)?.hand || [],
-      currentTurn: room.currentTurn
+    // Gửi bài cho từng người chơi
+    room.players.forEach((player, index) => {
+      io.to(player.id).emit('gameStarted', {
+        hand: player.hand,
+        currentTurn: room.currentTurn
+      });
     });
 
+    // Gửi số lá bài còn lại cho tất cả
     io.to(roomId).emit('updateCardsLeft', {
       cardsLeft: room.players.map(p => p.hand.length)
     });
