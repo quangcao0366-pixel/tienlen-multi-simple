@@ -1,8 +1,7 @@
 <script>
-// THAY TOÀN BỘ PHẦN <script> BÊN DƯỚI BẰNG ĐOẠN NÀY (từ dòng let hand = ... đến hết)
+// THAY TOÀN BỘ PHẦN <script> BÊN DƯỚI BẰNG ĐOẠN NÀY (từ đây đến hết thẻ </script>)
 let hand = [], selected = [], myIndex = -1, currentTurn = -1, roomId = '123', players = [], readyList = [], gameStarted = false;
-// THÊM DÒNG NÀY ĐỂ LƯU SỐ BÀI CÒN LẠI CỦA TỪNG NGƯỜI
-let cardsLeft = [13,13,13,13];  
+let cardsLeft = [13,13,13,13]; // Số bài còn lại của 4 người
 
 const socket = io();
 
@@ -24,7 +23,7 @@ socket.on('roomUpdate', data => {
   readyList = data.ready || [];
   document.getElementById('status').innerHTML = `Phòng ${roomId} • ${data.count}/4 người`;
   updateReadyButton();
-  renderHands();        // Quan trọng: cập nhật số lá khi có người vào/rời
+  renderHands();
   updateNames();
 });
 
@@ -32,8 +31,6 @@ socket.on('gameStarted', data => {
   gameStarted = true;
   hand = data.hand || [];
   currentTurn = data.currentTurn;
-  cardsLeft = [13,13,13,13];  // Reset lại 13 lá mỗi người
-  if (myIndex >= 0) cardsLeft[myIndex] = hand.length;
   selected = [];
   document.getElementById('readyBtn').style.display = 'none';
   document.getElementById('playedArea').innerHTML = '<div style="color:#aaa;font-size:36px">Bàn bài trống</div>';
@@ -41,10 +38,10 @@ socket.on('gameStarted', data => {
   updateTurn();
 });
 
-// QUAN TRỌNG NHẤT: NHẬN CẬP NHẬT SỐ BÀI CÒN LẠI TỪ SERVER
+// NHẬN CẬP NHẬT SỐ BÀI CÒN LẠI TỪ SERVER
 socket.on('updateCardsLeft', data => {
-  cardsLeft = data.cardsLeft;  // Server gửi mảng [13,12,13,11,...]
-  renderHands();               // Cập nhật lại số lá ??? của mọi người
+  cardsLeft = data.cardsLeft;
+  renderHands();
 });
 
 socket.on('cardsPlayed', data => {
@@ -59,12 +56,12 @@ socket.on('cardsPlayed', data => {
     area.appendChild(el);
   });
 
-  // Cập nhật tay mình
+  // Chỉ trừ bài của chính mình
   if (data.playerIndex === myIndex) {
     hand = hand.filter(x => !data.cards.includes(x));
     selected = [];
   }
-  
+
   renderHands();
   updateTurn();
 });
@@ -92,17 +89,17 @@ function updateReadyButton() {
   }
 }
 
-// HÀM QUAN TRỌNG NHẤT – SỬA DỨT ĐIỂM 2 LỖI
+// HÀM HIỂN THỊ BÀI – ĐÃ SỬA HOÀN HẢO
 function renderHands() {
-  // Tay mình
+  // Bài của mình
   document.getElementById('hand0').innerHTML = hand.map(c => {
     const red = ['♥','♦'].includes(c.slice(-1)) ? 'he' : '';
     return `<div class="card ${red} ${selected.includes(c)?'selected':''}" onclick="toggle('${c}')">${c}</div>`;
   }).join('');
 
-  // Tay 3 người khác – DỰA HOÀN TOÀN VÀO cardsLeft từ server
+  // Bài của 3 người khác – hiển thị đúng số lá theo thứ tự ghế
   for (let i = 1; i <= 3; i++) {
-    const realIndex = (myIndex + i) % 4;  // Đảm bảo đúng thứ tự ghế
+    const realIndex = (myIndex + i) % 4;
     const count = cardsLeft[realIndex] || 0;
     const html = Array(count).fill('<div class="card back">?</div>').join('');
     document.getElementById(`hand${i}`).innerHTML = html;
@@ -119,7 +116,11 @@ function updateNames() {
 }
 
 function toggle(c) {
-  selected = selected.includes(c) ? selected.filter(x => x !== c) : [...selected, c];
+  if (selected.includes(c)) {
+    selected = selected.filter(x => x !== c);
+  } else {
+    selected.push(c);
+  }
   renderHands();
   document.getElementById('playBtn').disabled = selected.length === 0 || myIndex !== currentTurn;
 }
