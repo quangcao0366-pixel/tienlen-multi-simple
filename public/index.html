@@ -53,7 +53,9 @@
     width:60vmin;height:35vmin;display:flex;flex-wrap:wrap;gap:2vmin;justify-content:center;align-items:center}
   .played-card{width:11vmin;height:15vmin;background:#fff;border-radius:12px;
     box-shadow:0 15px 40px rgba(0,0,0,0.8);transform:rotate(var(--r));
-    display:flex;flex-direction:column;align-items:center;justify-content:center}
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-weight:bold;transition:all 0.6s ease-out}
+  .played-card.he{color:#d50000}
   .played-card .rank{font-size:5vmin}
   .played-card .suit{font-size:6vmin}
 
@@ -85,7 +87,6 @@
 
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
 
-  /* FIX MOBILE: HIỂN THỊ ĐỦ 13 LÁ ĐẸP HOÀN HẢO */
   @media (max-width:768px){
     .logo{font-size:32px}
     #leaveBtn{top:8px;right:8px;padding:8px 16px;font-size:15px}
@@ -103,10 +104,6 @@
     .card .rank{font-size:2.2vmin}
     .card .suit{font-size:3.9vmin}
     #hand0{gap:0.2vmin;height:19vh}
-  }
-  @media (orientation:landscape) and (max-height:600px){
-    #hand0{height:17vh}
-    .card.selected{transform:translateY(-7vh)}
   }
 </style>
 </head>
@@ -205,20 +202,47 @@ socket.on('gameOver', d => {
 });
 
 socket.on('updateCardsLeft',d=>{cardsLeft=d.cardsLeft;renderHands();});
-socket.on('cardsPlayed',d=>{
-  const area=document.getElementById('playedArea');area.innerHTML='';
-  d.cards.forEach(c=>{
-    const el=document.createElement('div');
-    el.className='played-card'+(c.includes('H')||c.includes('D')?' he':'');
-    el.style.setProperty('--r',(Math.random()*40-20)+'deg');
-    const rank=c.slice(0,-1)==='10'?'10':c.slice(0,-1);
-    const suit=c.slice(-1);
-    el.innerHTML=`<div class="rank">${rank}</div><div class="suit">${suitSymbol[suit]}</div>`;
+
+// ĐOẠN NÀY ĐÃ SỬA HOÀN HẢO – MỌI NGƯỜI ĐỀU THẤY BÀI VỪA ĐÁNH + HIỆU ỨNG ĐẸP
+socket.on('cardsPlayed', d => {
+  const area = document.getElementById('playedArea');
+  area.innerHTML = '';
+
+  d.cards.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = 'played-card';
+    if (c.includes('H') || c.includes('D')) el.classList.add('he');
+
+    el.style.setProperty('--r', (Math.random() * 40 - 20) + 'deg');
+
+    const rank = c.slice(0, -1) === '10' ? '10' : c.slice(0, -1);
+    const suit = c.slice(-1);
+
+    el.innerHTML = `
+      <div class="rank">${rank}</div>
+      <div class="suit">${suitSymbol[suit]}</div>
+    `;
+
+    el.style.opacity = '0';
+    el.style.transform = `translateY(100px) rotate(${Math.random()*360}deg)`;
     area.appendChild(el);
+
+    setTimeout(() => {
+      el.style.transition = 'all 0.6s ease-out';
+      el.style.opacity = '1';
+      el.style.transform = `translateY(0) rotate(var(--r))`;
+    }, i * 100);
   });
-  if(d.playerIndex===myIndex){hand=hand.filter(x=>!d.cards.includes(x));selected=[];renderHands();}
+
+  if (d.playerIndex === myIndex) {
+    hand = hand.filter(x => !d.cards.includes(x));
+    selected = [];
+    renderHands();
+  }
+
   updateTurn();
 });
+
 socket.on('turnChanged',d=>{currentTurn=d.currentTurn;updateTurn();});
 
 function toggleReady(){socket.emit('toggleReady',{roomId});}
@@ -263,13 +287,17 @@ function playSelected(){
 function skipTurn(){
   if(myIndex===currentTurn) socket.emit('skipTurn',{roomId});
 }
+
+// HIỆN TÊN NGƯỜI ĐANG ĐÁNH RÕ RÀNG
 function updateTurn(){
+  const playerName = players[currentTurn] || '???';
+  document.getElementById('status').innerHTML = myIndex===currentTurn
+    ? '<span style="color:#ff1744;font-size:6vmin;animation:blink 1s infinite">ĐẾN LƯỢT BẠN!</span>'
+    : `<strong style="color:#ffd700">${playerName} đang đánh...</strong>`;
+
   const my=myIndex===currentTurn;
   document.getElementById('playBtn').disabled=!my||selected.length===0;
   document.getElementById('skipBtn').disabled=!my;
-  document.getElementById('status').innerHTML=my
-    ?'<span style="color:#ff1744;font-size:6vmin;animation:blink 1s infinite">ĐẾN LƯỢT BẠN!</span>'
-    :`Đợi <strong>${players[currentTurn]||'???'}</strong> đánh...`;
 }
 </script>
 </body>
