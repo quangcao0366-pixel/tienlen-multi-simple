@@ -2,146 +2,109 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CHÍ DŨNG CLUB - Tiến Lên Miền Nam</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;background:#040e06;color:#fff;font-family:'Segoe UI',sans-serif;overflow:hidden;height:100vh;
-    background:radial-gradient(circle at center,#0a3d1a,#000)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#040e06;overflow:hidden;height:100vh;font-family:'Segoe UI',sans-serif;color:#fff}
+  .logo{position:fixed;top:12px;left:12px;font-size:38px;font-weight:900;color:#ffd700;z-index:9999;
+    text-shadow:0 0 20px #ff0;animation:glow 2s infinite alternate}
+  @keyframes glow{from{text-shadow:0 0 15px #ff0} to{text-shadow:0 0 40px #ff0}}
 
-  .logo{position:fixed;top:15px;left:25px;font-size:42px;font-weight:900;color:#ffd700;z-index:9999;
-    text-shadow:0 0 15px #ff0,0 0 30px #ff0,0 0 60px #ff0;
-    animation:neon 1.6s ease-in-out infinite alternate}
-  @keyframes neon{from{text-shadow:0 0 10px #ff0,0 0 20px #ff0,0 0 40px #ff0}
-                  to{text-shadow:0 0 20px #ff0,0 0 40px #ff0,0 0 80px #ff0}}
+  #leaveBtn{position:fixed;top:12px;right:12px;padding:10px 24px;background:#ff1744;color:#fff;
+    font-weight:900;border-radius:50px;border:none;cursor:pointer;z-index:9999;display:none;
+    box-shadow:0 4px 15px rgba(255,23,68,0.6)}
 
-  #leaveBtn{position:fixed;top:18px;left:280px;padding:12px 32px;background:#ff1744;color:#fff;
-    font-size:20px;font-weight:900;border:none;border-radius:50px;cursor:pointer;
-    box-shadow:0 8px 25px rgba(255,23,68,0.6);z-index:9999;display:none;transition:all .3s}
-  #leaveBtn:hover{transform:scale(1.1);background:#f50057}
+  #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:100%}
+  #joinForm h1{font-size:72px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:50px}
+  input, #joinForm button{width:80vw;max-width:400px;padding:18px 20px;margin:10px auto;display:block;
+    border-radius:30px;border:none;font-size:22px}
+  input{background:#fff;color:#000;outline:none}
+  #joinForm button{background:#ffd700;color:#000;font-weight:900;cursor:pointer}
 
-  #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:10;width:100%}
-  #joinForm h1{font-size:76px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:60px}
-  input{padding:20px 35px;width:340px;max-width:80vw;margin:15px;border-radius:25px;border:none;font-size:24px;background:#fff;color:#000;
-        box-shadow:0 10px 30px rgba(0,0,0,0.6);outline:none}
-  #joinForm button{padding:24px 100px;max-width:90vw;background:#ffd700;color:#000;border:none;border-radius:50px;
-        font-weight:900;font-size:32px;cursor:pointer;box-shadow:0 15px 40px rgba(0,0,0,0.7);transition:.3s}
-  #joinForm button:hover{transform:scale(1.05)}
+  #gameArea{display:none;width:100vw;height:100vh;position:relative;
+    background:radial-gradient(circle at center,#0a3d1a 0%,#000 70%)}
 
-  #gameArea{display:none;width:100vw;height:100vh;position:relative;background:radial-gradient(ellipse at center,#1a5f38,#040e06)}
   .table{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:880px;height:640px;background:radial-gradient(#1e8c3a,#0a3d1a);border-radius:50%;
-    box-shadow:0 0 130px rgba(0,255,0,0.6),inset 0 0 100px rgba(0,0,0,0.8);border:14px solid #ffd700}
+    width:90vmin;height:75vmin;background:radial-gradient(#1e8c3a,#0a3d1a);
+    border-radius:50%;border:12px solid #ffd700;box-shadow:0 0 100px rgba(0,255,0,0.6)}
 
   .hand{position:absolute;display:flex;justify-content:center;align-items:flex-end}
-  #hand0{bottom:15px;left:50%;transform:translateX(-50%);gap:9px;padding:0 40px;max-width:97vw;overflow-x:auto;height:210px}
-  #hand1{top:35px;right:55px;flex-direction:column;gap:7px}
-  #hand2{top:35px;left:50%;transform:translateX(-50%);gap:9px}
-  #hand3{top:35px;left:55px;flex-direction:column;gap:7px}
+  #hand0{bottom:2vh;left:50%;transform:translateX(-50%);gap:0.6vmin;padding:0 2vmin;height:22vh;flex-wrap:nowrap}
+  #hand1{top:4vh;right:4vw;flex-direction:column;gap:0.6vmin}
+  #hand2{top:4vh;left:50%;transform:translateX(-50%);gap:0.6vmin}
+  #hand3{top:4vh;left:4vw;flex-direction:column;gap:0.6vmin}
 
-  .card{width:76px;height:110px;background:#fff;color:#000;border-radius:13px;border:4px solid #000;
-    box-shadow:0 12px 35px rgba(0,0,0,0.9);position:relative;cursor:pointer;transition:all .3s;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:bold;user-select:none;
-    margin-bottom:10px}
-  .card.he{color:#e91e63}
-  .card.selected{transform:translateY(-105px);box-shadow:0 70px 120px gold;z-index:999;overflow:visible}
-  .card .rank{font-size:32px;margin-bottom:3px}
-  .card .suit{font-size:52px}
-  .card.back{background:#0a3d1a;border:5px solid #ffd700;
-    background-image:repeating-linear-gradient(45deg,#0a3d1a 0,#104d22 14px,#0a3d1a 28px)}
-  .card.back::after{content:"CHÍ DŨNG";position:absolute;bottom:8px;right:8px;font-size:12px;color:#ffd700;
-    font-weight:900;text-shadow:1px 1px 4px #000}
+  .card{width:8.2vmin;height:11.8vmin;background:#fff;color:#000;border-radius:10px;
+    border:3px solid #000;box-shadow:0 8px 25px rgba(0,0,0,0.8);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-weight:bold;transition:all .3s;position:relative;overflow:hidden}
+  .card.he{color:#d50000}
+  .card.selected{transform:translateY(-10vh);box-shadow:0 60px 100px gold;z-index:99}
+  .card .rank{font-size:2.8vmin}
+  .card .suit{font-size:4.8vmin}
+  .card.back{background:#0a3d1a;border:4px solid #ffd700;
+    background-image:repeating-linear-gradient(45deg,#0a3d1a 0,#104d22 10px,#0a3d1a 20px)}
+  .card.back::after{content:"CHÍ DŨNG";position:absolute;bottom:4px;right:4px;
+    font-size:1.4vmin;color:#ffd700;font-weight:900}
 
-  #playedArea{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:480px;height:320px;
-    display:flex;flex-wrap:wrap;gap:25px;justify-content:center;align-items:center}
-  .played-card{width:96px;height:134px;background:#fff;color:#000;border-radius:15px;
-    box-shadow:0 20px 60px rgba(0,0,0,0.9);transform:rotate(var(--r));
-    display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:bold}
-  .played-card.he{color:#e91e63}
-  .played-card .rank{font-size:52px}
-  .played-card .suit{font-size:64px;margin-top:-10px}
+  #playedArea{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:60vmin;height:35vmin;display:flex;flex-wrap:wrap;gap:2vmin;justify-content:center;align-items:center}
+  .played-card{width:11vmin;height:15vmin;background:#fff;border-radius:12px;
+    box-shadow:0 15px 40px rgba(0,0,0,0.8);transform:rotate(var(--r));
+    display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .played-card .rank{font-size:5vmin}
+  .played-card .suit{font-size:6vmin}
 
-  .name{position:absolute;font-weight:900;font-size:24px;text-shadow:0 0 18px gold}
-  #name0{bottom:150px;left:50%;transform:translateX(-50%)}
-  #name1{top:130px;right:70px}#name2{top:65px;left:50%;transform:translateX(-50%)}
-  #name3{top:130px;left:70px}
+  .name{position:absolute;font-size:2.8vmin;font-weight:900;text-shadow:0 0 15px gold}
+  #name0{bottom:18vh;left:50%;transform:translateX(-50%)}
+  #name1{top:12vh;right:6vw}#name2{top:6vh;left:50%;transform:translateX(-50%)}
+  #name3{top:12vh;left:6vw}
 
-  #status{position:absolute;top:30px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:bold;text-shadow:0 0 18px #fff}
+  #status{position:absolute;top:2vh;left:50%;transform:translateX(-50%);
+    font-size:3.5vmin;font-weight:bold;color:#ffd700}
 
-  #readyBtn{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);
-    padding:26px 120px;background:#d50000;color:#fff;font-size:36px;border:none;border-radius:50px;
-    box-shadow:0 18px 50px rgba(0,0,0,0.8);font-weight:900;cursor:pointer;display:none}
+  #readyBtn{position:absolute;bottom:12vh;left:50%;transform:translateX(-50%);
+    padding:2.5vh 12vw;background:#d50000;color:#fff;font-size:4.5vmin;border:none;
+    border-radius:50px;font-weight:900;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,0.8)}
   #readyBtn.ready{background:#00c853}
 
-  .controls{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:40px}
-  .controls button{padding:24px 90px;background:#ffd700;color:#000;font-weight:900;font-size:28px;
-    border:none;border-radius:50px;cursor:pointer;box-shadow:0 15px 40px rgba(0,0,0,0.7);transition:.3s}
-  .controls button:hover{transform:scale(1.08)}
-  .controls button:disabled{opacity:0.5;cursor:not-allowed}
+  .controls{position:absolute;bottom:2vh;left:50%;transform:translateX(-50%);display:flex;gap:5vw}
+  .controls button{padding:2.5vh 10vw;background:#ffd700;color:#000;font-size:4vmin;
+    font-weight:900;border:none;border-radius:50px;cursor:pointer;
+    box-shadow:0 10px 30px rgba(0,0,0,0.7)}
+  .controls button:disabled{opacity:0.5}
 
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-
-  /* RESPONSIVE MOBILE - SỬA ĐẸP HƠN, THẤY ĐẦY ĐỦ BÀI, KHÔNG RỐI MẮT */
-  @media screen and (max-width: 768px) {
-    .logo{font-size:32px;top:10px;left:15px}
-    #joinForm h1{font-size:52px;margin-bottom:40px}
-    input{width:85vw;font-size:20px;padding:16px 20px}
-    #joinForm button{width:85vw;padding:18px 30px;font-size:26px}
-
-    .table{width:95vw;height:75vh;border-radius:40%;border-width:8px}
-    #hand0{gap:6px;padding:0 20px;height:190px;bottom:10px}  /* Tăng height, giảm gap */
-    .card{width:64px;height:95px;margin-bottom:8px}  /* Card nhỏ hơn */
-    .card .rank{font-size:26px}
-    .card .suit{font-size:44px}
-    .card.selected{transform:translateY(-85px)}  /* Nhấc thấp hơn một chút */
-    #playedArea{width:90vw;height:220px;gap:12px}  /* Giảm gap */
-    .played-card{width:80px;height:110px}
-    .played-card .rank{font-size:42px}
-    .played-card .suit{font-size:52px}
-    .name{font-size:20px}
-    #status{font-size:26px;top:15px}
-    #readyBtn{padding:20px 60px;font-size:30px;bottom:90px}
-    .controls{gap:20px;bottom:15px}
-    .controls button{padding:20px 50px;font-size:24px}
-    #name0{bottom:130px}
-    #name1{top:110px;right:30px}#name2{top:40px}#name3{top:110px;left:30px}
-    #leaveBtn{left:220px;font-size:18px;padding:10px 25px;top:15px}
+  /* ĐẢM BẢO 13 LÁ LUÔN HIỂN THỊ ĐẦY ĐỦ TRÊN MỌI MOBILE */
+  @media (max-width: 768px) {
+    .logo{font-size:32px;top:10px;left:10px}
+    #leaveBtn{top:10px;right:10px;padding:10px 20px;font-size:16px}
+    #joinForm h1{font-size:48px}
+    #status{font-size:18px;top:8px}
+    .card{width:7.8vmin;height:11.2vmin}
+    .card .rank{font-size:2.5vmin}
+    .card .suit{font-size:4.3vmin}
+    .card.selected{transform:translateY(-9vh)}
+    #hand0{gap:0.4vmin;height:21vh}
+    #playedArea{width:70vmin;height:30vmin;gap:1.5vmin}
+    .played-card{width:10vmin;height:13.5vmin}
   }
 
-  @media screen and (max-width: 480px) {
-    .logo{font-size:28px}
-    #joinForm h1{font-size:40px}
-    input{width:92vw;font-size:18px;padding:14px 18px}
-    #joinForm button{width:92vw;font-size:22px;padding:16px 25px}
-    .table{width:98vw;height:70vh;border-radius:30%}
-    #hand0{gap:4px;padding:0 10px;height:170px;bottom:5px}
-    .card{width:56px;height:85px}
-    .card .rank{font-size:22px}
-    .card .suit{font-size:38px}
-    .card.selected{transform:translateY(-70px)}
-    #playedArea{width:95vw;height:200px;gap:8px}
-    .played-card{width:70px;height:95px}
-    .played-card .rank{font-size:36px}
-    .played-card .suit{font-size:46px}
-    .name{font-size:16px}
-    #status{font-size:22px;top:10px}
-    #readyBtn{padding:18px 40px;font-size:26px}
-    .controls{gap:10px}
-    .controls button{padding:16px 30px;font-size:20px}
+  @media (max-width: 480px) {
+    .card{width:7.5vmin;height:10.8vmin}
+    .card .rank{font-size:2.3vmin}
+    .card .suit{font-size:4vmin}
+    #hand0{gap:0.3vmin;height:20vh}
+    .controls button{font-size:3.5vmin;padding:2vh 8vw}
+    #readyBtn{font-size:4vmin;padding:2vh 10vw}
   }
 
-  /* Landscape cho tablet/mobile ngang */
-  @media screen and (max-height: 600px) and (orientation: landscape) {
-    .table{height:85vh;width:75vw}
-    #hand0{height:140px}
-    #playedArea{height:250px}
-  }
-
-  /* High DPI screens (Retina) */
-  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    .card{border-width:2px}
-    .played-card{border-radius:12px}
+  /* Mobile ngang */
+  @media (orientation: landscape) and (max-height: 600px) {
+    .table{height:85vh;width:80vw}
+    #hand0{height:18vh}
+    .card.selected{transform:translateY(-8vh)}
   }
 </style>
 </head>
@@ -153,9 +116,7 @@
 <div id="joinForm">
   <h1>CHÍ DŨNG CLUB</h1>
   <input type="text" id="roomId" value="123" placeholder="ID phòng">
-  <br>
   <input type="text" id="playerName" placeholder="Tên anh em">
-  <br><br>
   <button onclick="joinRoom()">VÀO PHÒNG NGAY</button>
 </div>
 
@@ -164,7 +125,7 @@
   <div class="table">
     <div id="name2" class="name"></div><div id="hand2" class="hand"></div>
     <div id="name1" class="name"></div><div id="hand1" class="hand"></div>
-    <div id="playedArea"><div style="color:#999;font-size:48px">Bàn bài trống</div></div>
+    <div id="playedArea"><div style="color:#999;font-size:6vmin">Bàn bài trống</div></div>
     <div id="name3" class="name"></div><div id="hand3" class="hand"></div>
     <div id="name0" class="name">Bạn</div><div id="hand0" class="hand"></div>
   </div>
@@ -214,18 +175,18 @@ socket.on('roomUpdate',d=>{
 socket.on('gameStarted',d=>{
   gameStarted=true; hand=d.hand||[]; currentTurn=d.currentTurn; selected=[];
   document.getElementById('readyBtn').style.display='none';
-  document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:48px">Bàn bài trống</div>';
+  document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';
   renderHands(); updateTurn();
 });
 
 socket.on('gameOver', d => {
-  document.getElementById('playedArea').innerHTML=`<div style="color:#ffd700;font-size:80px">CHÚC MỪNG ${d.winner} THẮNG!</div>`;
+  document.getElementById('playedArea').innerHTML=`<div style="color:#ffd700;font-size:10vmin">CHÚC MỪNG ${d.winner} THẮNG!</div>`;
   hand = []; selected = []; gameStarted = false;
   document.getElementById('readyBtn').style.display = 'block';
   document.getElementById('readyBtn').innerText = 'SẴN SÀNG';
-  document.getElementById('readyBtn').className = '';
+  document.getElementById('readyBtn').classList.remove('ready');
   setTimeout(() => {
-    document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:48px">Bàn bài trống</div>';
+    document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';
   }, 5000);
 });
 
@@ -245,7 +206,6 @@ socket.on('cardsPlayed',d=>{
   updateTurn();
 });
 socket.on('turnChanged',d=>{currentTurn=d.currentTurn; updateTurn();});
-socket.on('newRound',()=>{document.getElementById('playedArea').innerHTML='<div style="color:gold;font-size:70px">VÒNG MỚI!</div>';});
 
 function toggleReady(){socket.emit('toggleReady',{roomId});}
 function leaveRoom(){
@@ -260,7 +220,7 @@ function updateReadyButton(){
   const b=document.getElementById('readyBtn');
   const r=readyList.includes(myIndex);
   b.innerText=r?'HỦY SẴN SÀNG':'SẴN SÀNG';
-  b.className=r?'ready':'';
+  b.classList.toggle('ready', r);
 }
 
 function renderHands(){
@@ -299,9 +259,10 @@ function updateTurn(){
   document.getElementById('playBtn').disabled=!my||selected.length===0;
   document.getElementById('skipBtn').disabled=!my;
   document.getElementById('status').innerHTML=my
-    ?'<span style="color:#ff1744;animation:blink 1s infinite;font-size:60px">ĐẾN LƯỢT BẠN!</span>'
+    ?'<span style="color:#ff1744;font-size:6vmin;animation:blink 1s infinite">ĐẾN LƯỢT BẠN!</span>'
     :`Đợi <strong>${players[currentTurn]||'???'}</strong> đánh...`;
 }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
 </script>
 </body>
 </html>
