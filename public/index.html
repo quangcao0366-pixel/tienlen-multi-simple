@@ -31,24 +31,34 @@
   #hand0::-webkit-scrollbar{display:none}
   #hand1{top:25px;right:45px;flex-direction:column;gap:5px}
   #hand2{top:25px;left:50%;transform:translateX(-50%);gap:7px}
-  #hand3{top:25px;left:45px;flex-direction:column;gap:5px}
+  #hand3{top:top:25px;left:45px;flex-direction:column;gap:5px}
 
   .card{
     width:68px;height:98px;background:#fff;color:#000;border-radius:12px;
     border:3px solid #000;box-shadow:0 8px 25px rgba(0,0,0,0.9);
-    position:relative;cursor:pointer;transition:transform .25s, box-shadow .25s;
+    position:relative;cursor:pointer;transition:all .25s;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     font-weight:bold;overflow:hidden;
   }
   .card.he{color:red}
-  .card.selected{transform:translateY(-50px) scale(1.1);box-shadow:0 35px 60px gold;z-index:99}
+  /* QUAN TRỌNG: Khi nhấc lên không bị mất nửa lá bài */
+  .card.selected{transform:translateY(-60px) !important;z-index:999;box-shadow:0 40px 70px gold !important}
+
   .card .rank{font-size:28px;line-height:1}
   .card .suit{font-size:42px;line-height:1}
-  .card .logo{position:absolute;bottom:4px;right:4px;font-size:9px;color:#ffd700;font-weight:900;text-shadow:1px 1px 2px #000}
 
+  /* Logo CHÍ DŨNG chỉ hiện ở mặt sau bài đối thủ */
+  .card.back .logo{
+    position:absolute;bottom:6px;right:6px;font-size:10px;color:#ffd700;
+    font-weight:900;text-shadow:1px 1px 3px #000;
+  }
   .card.back{
     background:#0a3d1a;border:4px solid #ffd700;
     background-image:repeating-linear-gradient(45deg,#0a3d1a 0,#0f4d20 10px,#0a3d1a 20px);
+  }
+  .card.back::after{
+    content:"CHÍ DŨNG";position:absolute;bottom:6px;right:6px;
+    font-size:10px;color:#ffd700;font-weight:900;text-shadow:1px 1px 3px #000;
   }
 
   #playedArea{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -109,7 +119,7 @@
 let hand=[],selected=[],myIndex=-1,currentTurn=-1,roomId='123',players=[],readyList=[],gameStarted=false,cardsLeft=[0,0,0,0];
 const socket=io();
 
-const suitSymbol = {S:'♠', H:'♥', D:'♦', C:'♣'};
+const suitSymbol = {S:'spade', H:'heart', D:'diamond', C:'club'};
 
 function getCardHTML(c){
   const rank = c.slice(0,-1) === '10' ? '10' : c.slice(0,-1);
@@ -119,7 +129,6 @@ function getCardHTML(c){
   return `<div class="card ${isRed?'he':''} ${selectedClass}" onclick="toggle('${c}')">
     <div class="rank">${rank}</div>
     <div class="suit">${suitSymbol[suit]}</div>
-    <div class="logo">CHÍ DŨNG</div>
   </div>`;
 }
 
@@ -181,7 +190,8 @@ function renderHands(){
   for(let i=1;i<=3;i++){
     const idx = (myIndex + i) % 4;
     const cnt = gameStarted ? cardsLeft[idx] : 0;
-    document.getElementById(`hand${i}`).innerHTML = Array(cnt).fill('<div class="card back"></div>').join('');
+    const backCards = Array(cnt).fill('').map(() => '<div class="card back"></div>').join('');
+    document.getElementById(`hand${i}`).innerHTML = backCards;
   }
 }
 function updateNames(){
