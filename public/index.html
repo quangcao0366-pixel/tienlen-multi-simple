@@ -9,17 +9,18 @@
   body{font-family:Arial;background:#0b6623;color:white;height:100vh;display:flex;flex-direction:column;overflow:hidden}
   h1{text-align:center;padding:15px;font-size:30px;color:#ffca28;text-shadow:0 0 20px gold}
 
-  #joinForm{text-align:center;padding:40px;background:rgba(0,0,0,0.5)}
-  input{padding:14px 20px;margin:8px;width:250px;font-size:18px;border-radius:10px;border:none}
-  button{padding:14px 50px;font-size:20px;background:#ffca28;border:none;border-radius:10px;cursor:pointer;font-weight:bold}
+  #joinForm{text-align:center;padding:50px;background:rgba(0,0,0,0.5)}
+  input{padding:14px 20px;margin:8px;width:260px;font-size:18px;border-radius:10px;border:none}
+  button{padding:16px 60px;font-size:22px;background:#ffca28;border:none;border-radius:12px;cursor:pointer;font-weight:bold}
 
   #gameArea{flex:1;display:none;position:relative;padding:20px 20px 140px}
   #status{text-align:center;font-size:38px;font-weight:bold;margin:15px 0;color:#ffca28;height:60px}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 
   #readyBtn{
-    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    padding:25px 80px;font-size:40px;background:#00ff00;color:black;border-radius:20px;
-    border:none;cursor:pointer;z-index:100;font-weight:bold;box-shadow:0 0 30px gold
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    padding:30px 100px;font-size:48px;background:#00e676;color:black;border-radius:20px;
+    border:none;cursor:pointer;z-index:9999;font-weight:bold;box-shadow:0 0 40px gold;
   }
   #readyBtn.ready{background:#ff4444}
 
@@ -52,18 +53,20 @@
 <div id="joinForm">
   <input id="roomId" placeholder="ID phòng (vd: 123)" value="123"><br><br>
   <input id="playerName" placeholder="Tên của bạn"><br><br>
-  <button onclick="joinRoom()">VÀO PHÒNG</button>
+  <button onclick="joinRoom()">VÀO PHÒNG NGAY</button>
 </div>
 
 <div id="gameArea">
   <div id="status">Đang chờ người chơi...</div>
   <button id="readyBtn" onclick="toggleReady()">SẴN SÀNG</button>
 
-  <div id="table"><div id="playedArea"><div style="color:#ccc;font-size:36px">Bàn bài trống</div></div></div>
+  <div id="table">
+    <div id="playedArea"><div style="color:#ccc;font-size:36px">Bàn bài trống</div></div>
+  </div>
 
-  <div class="seat" id="seat1"><div id="name1">Đối diện</div><div class="hand-container" id="hand1"></div></div>
-  <div class="seat" id="seat2"><div id="name2">Trái</div><div class="hand-container" id="hand2"></div></div>
-  <div class="seat" id="seat3"><div id="name3">Phải</div><div class="hand-container" id="hand3"></div></div>
+  <div class="seat" id="seat1"><div id="name1"></div><div class="hand-container" id="hand1"></div></div>
+  <div class="seat" id="seat2"><div id="name2"></div><div class="hand-container" id="hand2"></div></div>
+  <div class="seat" id="seat3"><div id="name3"></div><div class="hand-container" id="hand3"></div></div>
   <div class="seat" id="seat0"><div id="name0">Bạn</div><div class="hand-container" id="hand0"></div></div>
 
   <div id="controls">
@@ -74,35 +77,38 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-let hand = [], selected = [], myIndex = -1, currentTurn = -1, roomId = '123', players = [], readyPlayers = [], isReady = false;
+let hand = [], selected = [], myIndex = -1, currentTurn = -1, roomId = '123', players = [], readyList = [], isReady = false;
 
 const socket = io();
 
+// VÀO PHÒNG
 function joinRoom() {
   roomId = document.getElementById('roomId').value.trim() || '123';
-  const name = document.getElementById('playerName').value.trim() || 'Người chơi';
+  const name = document.getElementById('playerName').value.trim() || 'Player' + Math.floor(Math.random()*9999);
   socket.emit('joinRoom', { roomId, playerName: name });
 }
 
-socket.on('youJoined', d => {
-  myIndex = d.myIndex;
+// BẮT BUỘC HIỆN THỊ BÀN KHI VÀO PHÒNG
+socket.on('youJoined', data => {
+  myIndex = data.myIndex || 0;
   document.getElementById('joinForm').style.display = 'none';
   document.getElementById('gameArea').style.display = 'block';
   document.getElementById('readyBtn').style.display = 'block';
 });
 
-socket.on('roomUpdate', d => {
-  players = d.names || [];
-  readyPlayers = d.ready || [];
-  document.getElementById('status').innerHTML = `Phòng ${roomId} • ${d.count}/4 người`;
+socket.on('roomUpdate', data => {
+  players = data.names || [];
+  readyList = data.ready || [];
+  document.getElementById('status').innerHTML = `Phòng ${roomId} • ${data.count}/4 người`;
   updateReadyButton();
   renderHands();
   updateNames();
 });
 
-socket.on('gameStarted', d => {
-  hand = d.hand || [];
-  currentTurn = d.currentTurn;
+// BẮT ĐẦU VÁN KHI 4 NGƯỜI SẴN SÀNG
+socket.on('gameStarted', data => {
+  hand = data.hand || [];
+  currentTurn = data.currentTurn;
   selected = [];
   document.getElementById('readyBtn').style.display = 'none';
   document.getElementById('playedArea').innerHTML = '<div style="color:#ccc;font-size:36px">Bàn bài trống</div>';
@@ -111,81 +117,78 @@ socket.on('gameStarted', d => {
   updateNames();
 });
 
-socket.on('cardsPlayed', d => {
-  // HIỆN BÀI ĐÁNH LÊN BÀN
+socket.on('cardsPlayed', data => {
   const area = document.getElementById('playedArea');
   area.innerHTML = '';
-  d.cards.forEach(c => {
+  data.cards.forEach(c => {
     const el = document.createElement('div');
     el.className = 'played-card';
     el.style.setProperty('--r', (Math.random()*40-20)+'deg');
     el.innerText = c;
-    if (['♥','♦'].includes(c.slice(-1))) el.style.color = 'red';
+    if (['H','D'].includes(c.slice(-1))) el.style.color = 'red';
     area.appendChild(el);
   });
 
-  // XÓA BÀI KHỎI TAY MÌNH – DỨT ĐIỂM, KHÔNG QUAY LẠI
-  if (d.playerIndex === myIndex) {
-    hand = hand.filter(card => !d.cards.includes(card));
+  if (data.playerIndex === myIndex) {
+    hand = hand.filter(x => !data.cards.includes(x));
     selected = [];
   }
   renderHands();
   updateTurn();
-  updateNames();
 });
 
-socket.on('turnChanged', d => { currentTurn = d.currentTurn; updateTurn(); updateNames(); });
-socket.on('turnSkipped', d => { currentTurn = d.nextTurn; updateTurn(); updateNames(); });
+socket.on('turnChanged', d => { currentTurn = d.currentTurn; updateTurn(); });
+socket.on('turnSkipped', d => { currentTurn = d.nextTurn; updateTurn(); });
 socket.on('newRound', () => document.getElementById('playedArea').innerHTML = '<div style="color:gold;font-size:42px">VÒNG MỚI!</div>');
-socket.on('gameOver', d => {
-  alert(`${d.winner} THẮT CỤC TRẮNG!`);
-  setTimeout(() => location.reload(), 3000);
-});
+socket.on('gameOver', d => alert(d.winner + ' THẮNG CỤC!'));
 
-// NÚT SẴN SÀNG
 function toggleReady() {
-  isReady = !isReady;
   socket.emit('toggleReady', { roomId });
 }
 
 function updateReadyButton() {
   const btn = document.getElementById('readyBtn');
-  if (readyPlayers.length === 4) {
+  if (readyList.length === 4) {
     btn.style.display = 'none';
   } else {
     btn.style.display = 'block';
-    btn.innerText = readyPlayers.includes(myIndex) ? 'HỦY SẴN SÀNG' : 'SẴN SÀNG';
-    btn.className = readyPlayers.includes(myIndex) ? 'ready' : '';
+    isReady = readyList.includes(myIndex);
+    btn.innerText = isReady ? 'HỦY SẴN SÀNG' : 'SẴN SÀNG';
+    btn.className = isReady ? 'ready' : '';
   }
 }
 
 function renderHands() {
   // Tay mình
   document.getElementById('hand0').innerHTML = hand.map(c => {
-    const red = ['♥','♦'].includes(c.slice(-1)) ? 'he' : '';
+    const red = ['H','D'].includes(c.slice(-1)) ? 'he' : '';
     return `<div class="card ${red} ${selected.includes(c)?'selected':''}" onclick="toggle('${c}')">${c}</div>`;
   }).join('');
 
-  // Tay người khác – CHỈ HIỆN KHI CÓ NGƯỜI THẬT + ĐÃ SẴN SÀNG HOẶC ĐANG CHƠI
-  for (let i = 1; i <= 3; i++) {
-    const hasPlayer = players[i-1] && players[i-1].trim();
+  // Tay người khác
+  for (let i=1; i<=3; i++) {
+    const hasPlayer = players[i-1] && players[i-1].trim() !== '';
     const count = hasPlayer ? 13 : 0;
     document.getElementById(`hand${i}`).innerHTML = Array(count).fill('<div class="card back">?</div>').join('');
   }
 }
 
 function updateNames() {
-  for (let i = 0; i < 4; i++) {
+  for (let i=0; i<4; i++) {
     const el = document.getElementById(`name${i}`);
-    const name = i === myIndex ? 'Bạn' : (players[i] || '');
-    el.innerText = name + (readyPlayers.includes(i) ? ' [Ready] : '');
-    el.style.color = i === currentTurn ? '#ff1744' : '#ffca28';
-    el.style.opacity = name ? 1 : 0;
+    const name = i===myIndex ? 'Bạn' : (players[i] || '');
+    el.innerText = name;
+    if (readyList.includes(i)) el.innerText += ' Ready';
+    el.style.color = i===currentTurn ? '#ff1744' : '#ffca28';
   }
 }
 
 function toggle(c) {
-  selected = selected.includes(c) ? selected.filter(x=>x!==c) : [...selected, c];
+  if (selected.includes(c)) {
+    selected = selected.filter(x => x !== c);
+  } else {
+    selected.push(c);
+  }
   renderHands();
   document.getElementById('playBtn').disabled = selected.length===0 || myIndex!==currentTurn;
 }
@@ -206,7 +209,7 @@ function updateTurn() {
   document.getElementById('skipBtn').disabled = !myTurn;
   document.getElementById('status').innerHTML = myTurn
     ? '<span style="color:#ff1744;animation:blink 1s infinite;font-size:44px">ĐẾN LƯỢT BẠN – ĐÁNH ĐI!</span>'
-    : `Đợi <strong>${players[currentTurn]||'người chơi'}</strong> đánh...`;
+    : `Đợi <strong>${players[currentTurn]||'???'} đánh...`;
 }
 </script>
 </body>
