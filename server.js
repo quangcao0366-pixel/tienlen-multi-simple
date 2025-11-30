@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, { cors: { origin: "*" } });
@@ -19,32 +18,35 @@ io.on('connection', (socket) => {
         currentTurn: 0,
         lastPlay: null,
         skipCount: 0,
-        gameCount: 0,        // đếm ván
-        lastWinner: null     // người thắng ván trước
+        gameCount: 0,
+        lastWinner: null
       };
     }
-
     if (rooms[roomId].players.length >= 4) {
       socket.emit('errorMsg', 'Phòng đầy!');
       return;
     }
 
     const player = {
-  id: socket.id,
-  name: playerName || `Người ${rooms[roomId].players.length + 1}`,
-  hand: [],
-  cardsLeft: 0   // <--- DÁN DÒNG NÀY VÀO ĐÂY
-};
-rooms[roomId].players.push(player);
+      id: socket.id,
+      name: playerName || `Người ${rooms[roomId].players.length + 1}`,
+      hand: []
+    };
+    rooms[roomId].players.push(player);
     socket.join(roomId);
 
-    socket.emit('youJoined', { myIndex: rooms[roomId].players.length - 1 });
+    const myIndex = rooms[roomId].players.length - 1;
+    socket.emit('youJoined', { myIndex });
+
     io.to(roomId).emit('roomUpdate', {
       count: rooms[roomId].players.length,
-      names: rooms[roomId].players.map(p => p.name)
+      names: rooms[roomId].players.map(p => p.name),
+      ready: []
     });
 
-    if (rooms[roomId].players.length === 4) startNewGame(roomId);
+    if (rooms[roomId].players.length === 4) {
+      startNewGame(roomId);
+    }
   });
 
   socket.on('playCards', ({ roomId, cards }) => {
@@ -56,29 +58,34 @@ rooms[roomId].players.push(player);
       return;
     }
 
-    // CẬP NHẬT SỐ BÀI CÒN LẠI + GỬI CHO TẤT CẢ CLIENT
-room.players[room.currentTurn].cardsLeft = room.players[room.currentTurn].hand.length;
-io.to(roomId).emit('updateCardsLeft', {
-  cardsLeft: room.players.map(p => p ? p.cardsLeft : 13)
-});
+    const player = room.players[room.currentTurn];
+
+    // Xóa bài khỏi tay người chơi
+    player.hand = player.hand.filter(c => !cards.includes(c));
+
+    // Cập nhật và gửi số bài còn lại cho tất cả client
+    const cardsLeft = room.players.map(p => p.hand.length);
+    io.to(roomId).emit('updateCardsLeft', { cardsLeft });
 
     room.lastPlay = cards;
     room.skipCount = 0;
-    moveToNextTurn(roomId);
 
     io.to(roomId).emit('cardsPlayed', {
+      playerIndex: room.currentTurn,
       playerName: player.name,
-      cards,
-      nextTurn: room.currentTurn
+      cards
     });
 
+    // Kiểm tra thắng
     if (player.hand.length === 0) {
       room.lastWinner = room.currentTurn;
       room.gameCount++;
       io.to(roomId).emit('gameOver', { winner: player.name, winnerIndex: room.currentTurn });
-      // Tự động bắt đầu ván mới sau 5s
       setTimeout(() => startNewGame(roomId), 5000);
+      return;
     }
+
+    moveToNextTurn(roomId);
   });
 
   socket.on('skipTurn', ({ roomId }) => {
@@ -117,6 +124,7 @@ function startNewGame(roomId) {
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
 
+  // Chia bài
   room.players.forEach(p => {
     p.hand = deck.splice(0, 13).sort((a, b) => {
       const ra = ranks.indexOf(a.slice(0,-1));
@@ -128,7 +136,7 @@ function startNewGame(roomId) {
   room.lastPlay = null;
   room.skipCount = 0;
 
-  // === LUẬT CHUẨN: VÁN 1 = 3♠, CÁC VÁN SAU = NGƯỜI THẮNG VÁN TRƯỚC ===
+  // Quyết định người đánh đầu
   if (room.gameCount === 0) {
     // Ván đầu: tìm người có 3♠
     for (let i = 0; i < 4; i++) {
@@ -136,36 +144,30 @@ function startNewGame(roomId) {
         room.currentTurn = i;
         break;
       }
-      room.players.forEach(p => {
-  if (p) p.cardsLeft = p.hand.length;
-});
-io.to(roomId).emit('updateCardsLeft', {
-  cardsLeft: room.players.map(p => p ? p.cardsLeft : 13)
-});
     }
   } else {
     // Các ván sau: người thắng ván trước đánh trước
-    room.currentTurn = room.lastWinner;
+    room.currentTurn = room.lastWinner || 0;
   }
 
+  // Gửi số bài còn lại ngay từ đầu ván
+  const initialCardsLeft = room.players.map(p => p.hand.length);
+  io.to(roomId).emit('updateCardsLeft', { cardsLeft: initialCardsLeft });
+
+  // Gửi bài cho từng người
   room.players.forEach((p, idx) => {
     io.to(p.id).emit('gameStarted', {
       hand: p.hand,
-      myIndex: idx,
-      currentTurn: room.currentTurn,
-      players: room.players.map(x => x.name),
-      vanSo: room.gameCount + 1
+      currentTurn: room.currentTurn
     });
   });
-
-  io.to(roomId).emit('newGameStarted', { vanSo: room.gameCount + 1 });
 }
 
 function isValidPlay(cards, lastPlay) {
   if (!lastPlay) return true;
   if (cards.length !== lastPlay.length) return false;
 
-  const rankVal = c => "3456789XJQKA2".indexOf(c.slice(0, -1));
+  const rankVal = c => "3456789XJQKA2".indexOf(c.slice(0, -1).replace('10','X'));
   const vals = cards.map(rankVal).sort((a,b)=>a-b);
   const lastVals = lastPlay.map(rankVal).sort((a,b)=>a-b);
 
@@ -175,9 +177,8 @@ function isValidPlay(cards, lastPlay) {
   if (isSameKind(vals) && cards.length >= 3) return true;
   if (isStraight(vals)) return true;
   if (vals[vals.length-1] > lastVals[lastVals.length-1]) return true;
-
   return false;
 }
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log(`Server Tiến Lên Miền Nam - Chuẩn luật 2025 running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server Tiến Lên Miền Nam - Chạy mượt 100% - Port ${PORT}`));
