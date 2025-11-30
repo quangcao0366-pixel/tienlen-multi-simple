@@ -3,43 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tiến Lên Miền Nam 4 Người</title>
+<title>Tiến Lên Miền Nam - Chuẩn ZingPlay</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
   body{margin:0;background:#0d4f1a;color:#fff;font-family:Arial;overflow:hidden}
   #joinForm{text-align:center;padding-top:20vh}
   input{padding:14px 20px;width:260px;margin:10px;border-radius:12px;border:none;font-size:18px}
-  button{padding:16px 50px;margin:10px;background:#ffeb3b;color:#000;border:none;border-radius:12px;font-weight:bold;font-size:20px;cursor:pointer}
+  button{padding:16px 50px;background:#ffeb3b;color:#000;border:none;border-radius:12px;font-weight:bold;font-size:20px;cursor:pointer}
   #gameArea{display:none;width:100vw;height:100vh;position:relative}
-  .table{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:740px;height:500px;background:#1a7f3a;border-radius:50%;box-shadow:0 15px 50px rgba(0,0,0,0.9)}
-  .hand{position:absolute;display:flex;gap:8px;justify-content:center;align-items:center}
-  #hand0{bottom:18px;left:50%;transform:translateX(-50%)}
-  #hand1{top:18px;right:35px;flex-direction:column}
-  #hand2{top:18px;left:50%;transform:translateX(-50%)}
-  #hand3{top:18px;left:35px;flex-direction:column}
-  .card{width:58px;height:82px;background:#fff;color:#000;border:3px solid #222;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:21px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.7);transition:all .25s}
-  .card.he{color:red}.card.selected{transform:translateY(-35px);box-shadow:0 25px 40px gold !important;z-index:10}
-  .card.back{background:#000;color:#000}
-  #playedArea{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:380px;height:220px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center}
-  .played-card{width:74px;height:100px;background:#fff;color:#000;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:bold;box-shadow:0 10px 25px rgba(0,0,0,0.8);transform:rotate(var(--r))}
+  .table{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:760px;height:520px;background:#1a7f3a;border-radius:50%;box-shadow:0 15px 60px rgba(0,0,0,0.9)}
+  .hand{position:absolute;display:flex;justify-content:center;align-items:center}
+  #hand0{bottom:8px;left:50%;transform:translateX(-50%);gap:4px;padding:0 10px;max-width:95vw;overflow-x:auto;scrollbar-width:none}
+  #hand0::-webkit-scrollbar{display:none}
+  #hand1{top:15px;right:30px;flex-direction:column;gap:3px}
+  #hand2{top:15px;left:50%;transform:translateX(-50%);gap:4px}
+  #hand3{top:15px;left:30px;flex-direction:column;gap:3px}
+  .card{width:58px;height:82px;background:#fff;color:#000;border:3px solid #222;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:21px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.7);transition:all .25s;flex-shrink:0}
+  .card.he{color:red}
+  .card.selected{transform:translateY(-38px);box-shadow:0 28px 45px gold !important;z-index:10}
+  .card.back{background:#111;color:#111;border:2px solid #333}
+  #playedArea{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:400px;height:240px;display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:center}
+  .played-card{width:76px;height:104px;background:#fff;color:#000;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold;box-shadow:0 12px 30px rgba(0,0,0,0.8);transform:rotate(var(--r))}
   .played-card.he{color:red}
-  .name{position:absolute;font-weight:bold;font-size:19px;pointer-events:none}
-  #name0{bottom:105px;left:50%;transform:translateX(-50%)}
-  #name1{top:95px;right:45px}#name2{top:45px;left:50%;transform:translateX(-50%)}
-  #name3{top:95px;left:45px}
-  #status{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:23px;font-weight:bold}
-  #readyBtn{position:absolute;bottom:85px;left:50%;transform:translateX(-50%);padding:18px 70px;background:#e91e63;color:#fff;font-size:26px;border:none;border-radius:50px;box-shadow:0 8px 25px rgba(0,0,0,0.6);transition:all .3s;font-weight:bold}
-  #readyBtn:hover{transform:translateX(-50%) translateY(-5px);box-shadow:0 15px 35px rgba(233,30,99,0.6)}
+  .name{position:absolute;font-weight:bold;font-size:19px;text-shadow:0 0 8px #000}
+  #name0{bottom:100px;left:50%;transform:translateX(-50%)}
+  #name1{top:90px;right:40px}
+  #name2{top:40px;left:50%;transform:translateX(-50%)}
+  #name3{top:90px;left:40px}
+  #status{position:absolute;top:15px;left:50%;transform:translateX(-50%);font-size:24px;font-weight:bold}
+  #readyBtn{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);padding:18px 80px;background:#e91e63;color:#fff;font-size:28px;border:none;border-radius:50px;box-shadow:0 10px 30px rgba(0,0,0,0.6);transition:.3s}
   #readyBtn.ready{background:#4caf50}
-  .controls{position:absolute;bottom:18px;left:50%;transform:translateX(-50%)}
-  .controls button{padding:16px 50px;margin:0 18px;background:#ffeb3b;color:#000;font-weight:bold;border-radius:12px}
+  .controls{position:absolute;bottom:15px;left:50%;transform:translateX(-50%)}
+  .controls button{padding:16px 55px;margin:0 20px;background:#ffeb3b;color:#000;font-weight:bold;border-radius:14px;font-size:20px}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
 </style>
 </head>
 <body>
 
 <div id="joinForm">
-  <h1 style="color:#ffeb3b;font-size:54px;text-shadow:0 0 20px gold;margin-bottom:40px">TIẾN LÊN MIỀN NAM</h1>
+  <h1 style="color:#ffeb3b;font-size:56px;text-shadow:0 0 20px gold;margin-bottom:40px">TIẾN LÊN MIỀN NAM</h1>
   <input id="roomId" value="123" placeholder="ID phòng"><br>
   <input id="playerName" placeholder="Tên của bạn"><br><br>
   <button onclick="joinRoom()">THAM GIA PHÒNG</button>
@@ -50,13 +52,11 @@
   <div class="table">
     <div id="name2" class="name"></div><div id="hand2" class="hand"></div>
     <div id="name1" class="name"></div><div id="hand1" class="hand"></div>
-    <div id="playedArea"><div style="color:#ccc;font-size:38px">Bàn bài trống</div></div>
+    <div id="playedArea"><div style="color:#ccc;font-size:40px">Bàn bài trống</div></div>
     <div id="name3" class="name"></div><div id="hand3" class="hand"></div>
     <div id="name0" class="name">Bạn</div><div id="hand0" class="hand"></div>
   </div>
-
   <button id="readyBtn" onclick="toggleReady()">SẴN SÀNG</button>
-
   <div class="controls">
     <button id="playBtn" onclick="playSelected()" disabled>ĐÁNH</button>
     <button id="skipBtn" onclick="skipTurn()" disabled>BỎ QUA</button>
@@ -74,44 +74,33 @@ function joinRoom(){
   socket.emit('joinRoom',{roomId,playerName:name});
 }
 
-socket.on('youJoined',d=>{
-  myIndex=d.myIndex;
-  document.getElementById('joinForm').style.display='none';
-  document.getElementById('gameArea').style.display='block';
-  document.getElementById('readyBtn').style.display='block';
-});
+socket.on('youJoined',d=>{myIndex=d.myIndex;document.getElementById('joinForm').style.display='none';document.getElementById('gameArea').style.display='block';document.getElementById('readyBtn').style.display='block';});
 
 socket.on('roomUpdate',d=>{
   players=d.names||[]; readyList=d.ready||[];
   document.getElementById('status').innerHTML=`Phòng ${roomId} • ${d.count}/4 người`;
-  updateNames();
-  updateReadyButton();
-  renderHands();
+  updateNames(); updateReadyButton(); renderHands();
 });
 
 socket.on('gameStarted',d=>{
   gameStarted=true; hand=d.hand||[]; currentTurn=d.currentTurn; selected=[];
   document.getElementById('readyBtn').style.display='none';
-  document.getElementById('playedArea').innerHTML='<div style="color:#ccc;font-size:38px">Bàn bài trống</div>';
+  document.getElementById('playedArea').innerHTML='<div style="color:#ccc;font-size:40px">Bàn bài trống</div>';
   renderHands(); updateTurn();
 });
 
 socket.on('updateCardsLeft',d=>{cardsLeft=d.cardsLeft;renderHands();});
 socket.on('cardsPlayed',d=>{
-  const area=document.getElementById('playedArea');area.innerHTML='';
-  d.cards.forEach(c=>{const el=document.createElement('div');el.className='played-card'+(c.includes('♥')||c.includes('♦')?' he':'');el.style.setProperty('--r',(Math.random()*50-25)+'deg');el.innerText=c;area.appendChild(el);});
+  const area=document.getElementById('playedArea'); area.innerHTML='';
+  d.cards.forEach(c=>{const el=document.createElement('div');el.className='played-card'+(c.includes('♥')||c.includes('♦')?' he':'');el.style.setProperty('--r',(Math.random()*40-20)+'deg');el.innerText=c;area.appendChild(el);});
   if(d.playerIndex===myIndex){hand=hand.filter(x=>!d.cards.includes(x));selected=[];renderHands();}
   updateTurn();
 });
 socket.on('turnChanged',d=>{currentTurn=d.currentTurn;updateTurn();});
-socket.on('turnSkipped',()=>{updateTurn();});
-socket.on('newRound',()=>{document.getElementById('playedArea').innerHTML='<div style="color:gold;font-size:52px">VÒNG MỚI!</div>';});
-socket.on('gameOver',d=>{document.getElementById('playedArea').innerHTML=`<div style="color:#ffeb3b;font-size:58px">CHÚC MỪNG ${d.winner} THẮNG!</div>`;setTimeout(()=>location.reload(),8000);});
+socket.on('newRound',()=>{document.getElementById('playedArea').innerHTML='<div style="color:gold;font-size:56px">VÒNG MỚI!</div>';});
+socket.on('gameOver',d=>{document.getElementById('playedArea').innerHTML=`<div style="color:#ffeb3b;font-size:60px">CHÚC MỪNG ${d.winner} THẮNG!</div>`;setTimeout(()=>location.reload(),8000);});
 
-function toggleReady(){
-  socket.emit('toggleReady', {roomId});   // ĐÃ FIX – gửi đúng {roomId}
-}
-
+function toggleReady(){socket.emit('toggleReady',{roomId});}
 function updateReadyButton(){
   const btn=document.getElementById('readyBtn');
   if(gameStarted){btn.style.display='none';return;}
@@ -119,7 +108,6 @@ function updateReadyButton(){
   btn.innerText=ready?'HỦY SẴN SÀNG':'SẴN SÀNG';
   btn.className=ready?'ready':'';
 }
-
 function renderHands(){
   document.getElementById('hand0').innerHTML=hand.map(c=>{
     const red=['♥','♦'].includes(c.slice(-1))?'he':'';
@@ -127,29 +115,27 @@ function renderHands(){
   }).join('');
   for(let i=1;i<=3;i++){
     const idx=(myIndex+i)%4;
-    const count=gameStarted?cardsLeft[idx]:0;
-    document.getElementById(`hand${i}`).innerHTML=Array(count).fill('<div class="card back">?</div>').join('');
+    const cnt=gameStarted?cardsLeft[idx]:0;
+    document.getElementById(`hand${i}`).innerHTML=Array(cnt).fill('<div class="card back"></div>').join('');
   }
 }
-
 function updateNames(){
   for(let i=0;i<4;i++){
     const el=document.getElementById(`name${i}`);
-    el.innerText = i===myIndex?'Bạn':(players[i]||'Đang chờ...');
-    if(readyList.includes(i)) el.innerText += ' Ready';
-    el.style.color = i===currentTurn?'#ff1744':'#ffca28';
+    el.innerText=i===myIndex?'Bạn':(players[i]||'Đang chờ...');
+    if(readyList.includes(i)) el.innerText+=' Ready';
+    el.style.color=i===currentTurn?'#ff1744':'#ffca28';
   }
 }
-
 function toggle(c){selected=selected.includes(c)?selected.filter(x=>x!==c):[...selected,c];renderHands();document.getElementById('playBtn').disabled=selected.length===0||myIndex!==currentTurn;}
-function playSelected(){if(selected.length&&myIndex===currentTurn){socket.emit('playCards',{roomId,cards:selected});selected=[];renderHands();}}
+function playSelected(){if(selected.length&&myIndex===currentTurn){socket.emit('playCards',{roomId,cards:selected});}}
 function skipTurn(){if(myIndex===currentTurn)socket.emit('skipTurn',{roomId});}
 function updateTurn(){
   const myTurn=myIndex===currentTurn;
   document.getElementById('playBtn').disabled=!myTurn||selected.length===0;
   document.getElementById('skipBtn').disabled=!myTurn;
   document.getElementById('status').innerHTML=myTurn
-    ?'<span style="color:#ff1744;animation:blink 1s infinite;font-size:50px">ĐẾN LƯỢT BẠN!</span>'
+    ?'<span style="color:#ff1744;animation:blink 1s infinite;font-size:52px">ĐẾN LƯỢT BẠN!</span>'
     :`Đợi <strong>${players[currentTurn]||'???'}</strong> đánh...`;
 }
 </script>
