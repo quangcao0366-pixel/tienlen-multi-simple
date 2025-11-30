@@ -18,7 +18,7 @@
 
   #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:100%;max-width:400px}
   #joinForm h1{font-size:72px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:50px}
-  input, #joinForm button{width:100%;padding:18px 20px;margin:12px 0;display:block;
+  input,#joinForm button{width:100%;padding:18px 20px;margin:12px 0;display:block;
     border-radius:30px;border:none;font-size:22px}
   input{background:#fff;color:#000;outline:none}
   #joinForm button{background:#ffd700;color:#000;font-weight:900;cursor:pointer}
@@ -70,6 +70,13 @@
     border-radius:50px;font-weight:900;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,0.8)}
   #readyBtn.ready{background:#00c853}
 
+  #startGameBtn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    padding:4vh 14vw;background:#ffeb3b;color:#d50000;font-size:5.5vmin;font-weight:900;
+    border:none;border-radius:60px;cursor:pointer;box-shadow:0 20px 60px rgba(255,235,59,0.8);
+    animation:pulse 2s infinite;z-index:99;display:none}
+  @keyframes pulse{0%{box-shadow:0 20px 60px rgba(255,235,59,0.8)}
+                    50%{box-shadow:0 20px 90px rgba(255,235,59,1)}}
+
   .controls{position:absolute;bottom:2vh;left:50%;transform:translateX(-50%);display:flex;gap:5vw}
   .controls button{padding:2.5vh 10vw;background:#ffd700;color:#000;font-size:4vmin;
     font-weight:900;border:none;border-radius:50px;cursor:pointer;
@@ -77,24 +84,11 @@
   .controls button:disabled{opacity:0.5}
 
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
-
-  @media (max-width:768px){
-    .logo{font-size:32px}
-    #leaveBtn{top:10px;right:10px;padding:10px 20px;font-size:16px}
-    #joinForm h1{font-size:48px}
-    #status{font-size:18px;top:8px}
-    .card{width:7.8vmin;height:11.2vmin}
-    .card.selected{transform:translateY(-9vh)}
-    #hand0{gap:0.4vmin;height:21vh}
-  }
-  @media (max-width:480px){
-    .card{width:7.5vmin;height:10.8vmin}
-    #hand0{gap:0.3vmin;height:20vh}
-  }
-  @media (orientation:landscape) and (max-height:600px){
-    .table{height:85vh;width:80vw}
-    #hand0{height:18vh}
-  }
+  @media (max-width:768px){.logo{font-size:32px}#leaveBtn{top:10px;right:10px;padding:10px 20px;font-size:16px}
+    #joinForm h1{font-size:48px}#status{font-size:18px;top:8px}
+    .card{width:7.8vmin;height:11.2vmin}.card.selected{transform:translateY(-9vh)}#hand0{gap:0.4vmin;height:21vh}}
+  @media (max-width:480px){.card{width:7.5vmin;height:10.8vmin}#hand0{gap:0.3vmin;height:20vh}}
+  @media (orientation:landscape) and (max-height:600px){.table{height:85vh;width:80vw}#hand0{height:18vh}}
 </style>
 </head>
 <body>
@@ -119,6 +113,7 @@
     <div id="name0" class="name">Bạn</div><div id="hand0" class="hand"></div>
   </div>
   <button id="readyBtn" onclick="toggleReady()">SẴN SÀNG</button>
+  <button id="startGameBtn" onclick="startGame()">BẮT ĐẦU VÁN</button>
   <div class="controls">
     <button id="playBtn" onclick="playSelected()">ĐÁNH</button>
     <button id="skipBtn" onclick="skipTurn()">BỎ QUA</button>
@@ -126,7 +121,7 @@
 </div>
 
 <script>
-let hand=[],selected=[],myIndex=-1,currentTurn=-1,roomId='123',players=[],readyList=[],gameStarted=false,cardsLeft=[0,0,0,0];
+let hand=[],selected=[],myIndex=-1,currentTurn=-1,roomId='123',players=[],readyList=[],gameStarted=false,cardsLeft=[];
 const socket=io();
 const suitSymbol = {S:'♠', H:'♥', D:'♦', C:'♣'};
 
@@ -147,6 +142,10 @@ function joinRoom(){
   socket.emit('joinRoom',{roomId,playerName:name});
 }
 
+function startGame(){
+  socket.emit('startGame', {roomId});
+}
+
 socket.on('youJoined', d => {
   myIndex = d.myIndex;
   document.getElementById('joinForm').style.display='none';
@@ -159,29 +158,36 @@ socket.on('roomUpdate',d=>{
   players=d.names||[]; readyList=d.ready||[];
   document.getElementById('status').innerHTML=`Phòng ${roomId} • ${d.count}/4 anh em`;
   updateNames(); updateReadyButton(); renderHands();
+  checkShowStartButton(d.count);
 });
+
+function checkShowStartButton(playerCount){
+  const allReady = playerCount >= 2 && readyList.length === playerCount;
+  const isFirstPlayer = myIndex === 0;
+  document.getElementById('startGameBtn').style.display = 
+    (!gameStarted && allReady && isFirstPlayer) ? 'block' : 'none';
+}
 
 socket.on('gameStarted',d=>{
   gameStarted=true; hand=d.hand||[]; currentTurn=d.currentTurn; selected=[];
   document.getElementById('readyBtn').style.display='none';
+  document.getElementById('startGameBtn').style.display='none';
   document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';
   renderHands(); updateTurn();
 });
 
 socket.on('gameOver', d => {
   document.getElementById('playedArea').innerHTML=`<div style="color:#ffd700;font-size:10vmin">CHÚC MỪNG ${d.winner} THẮNG!</div>`;
-  hand = []; selected = []; gameStarted = false;
-  document.getElementById('readyBtn').style.display = 'block';
-  document.getElementById('readyBtn').innerText = 'SẴN SÀNG';
+  hand=[];selected=[];gameStarted=false;
+  document.getElementById('readyBtn').style.display='block';
+  document.getElementById('readyBtn').innerText='SẴN SÀNG';
   document.getElementById('readyBtn').classList.remove('ready');
-  setTimeout(() => {
-    document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';
-  }, 5000);
+  setTimeout(()=>{document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';checkShowStartButton(players.length);},5000);
 });
 
-socket.on('updateCardsLeft',d=>{cardsLeft=d.cardsLeft; renderHands();});
+socket.on('updateCardsLeft',d=>{cardsLeft=d.cardsLeft;renderHands();});
 socket.on('cardsPlayed',d=>{
-  const area=document.getElementById('playedArea'); area.innerHTML='';
+  const area=document.getElementById('playedArea');area.innerHTML='';
   d.cards.forEach(c=>{
     const el=document.createElement('div');
     el.className='played-card'+(c.includes('H')||c.includes('D')?' he':'');
@@ -191,25 +197,20 @@ socket.on('cardsPlayed',d=>{
     el.innerHTML=`<div class="rank">${rank}</div><div class="suit">${suitSymbol[suit]}</div>`;
     area.appendChild(el);
   });
-  if(d.playerIndex===myIndex){hand=hand.filter(x=>!d.cards.includes(x)); selected=[]; renderHands();}
+  if(d.playerIndex===myIndex){hand=hand.filter(x=>!d.cards.includes(x));selected=[];renderHands();}
   updateTurn();
 });
-socket.on('turnChanged',d=>{currentTurn=d.currentTurn; updateTurn();});
+socket.on('turnChanged',d=>{currentTurn=d.currentTurn;updateTurn();});
 
 function toggleReady(){socket.emit('toggleReady',{roomId});}
-function leaveRoom(){
-  if(confirm('Thoát khỏi phòng này?')){
-    socket.emit('leaveRoom',{roomId});
-    location.reload();
-  }
-}
+function leaveRoom(){if(confirm('Thoát khỏi phòng này?')){socket.emit('leaveRoom',{roomId});location.reload();}}
 
 function updateReadyButton(){
-  if(gameStarted) return;
+  if(gameStarted)return;
   const b=document.getElementById('readyBtn');
   const r=readyList.includes(myIndex);
   b.innerText=r?'HỦY SẴN SÀNG':'SẴN SÀNG';
-  b.classList.toggle('ready', r);
+  b.classList.toggle('ready',r);
 }
 
 function renderHands(){
@@ -237,7 +238,7 @@ function toggle(c){
 function playSelected(){
   if(selected.length && myIndex===currentTurn){
     socket.emit('playCards',{roomId,cards:selected});
-    selected=[]; renderHands();
+    selected=[];renderHands();
   }
 }
 function skipTurn(){
