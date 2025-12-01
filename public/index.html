@@ -18,9 +18,8 @@
 
   #joinForm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:100%;max-width:400px}
   #joinForm h1{font-size:72px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:50px}
-  input,#joinForm button{width:100%;padding:18px 20px;margin:12px 0;display:block;
-    border-radius:30px;border:none;font-size:22px}
-  input{background:#fff;color:#000;outline:none}
+  input,#joinForm button{width:100%;padding:18px 20px;margin:12px 0;border-radius:30px;border:none;font-size:22px}
+  input{background:#fff;color:#000}
   #joinForm button{background:#ffd700;color:#000;font-weight:900;cursor:pointer}
 
   #gameArea{display:none;width:100vw;height:100vh;position:relative;
@@ -31,45 +30,45 @@
     border-radius:50%;border:12px solid #ffd700;box-shadow:0 0 100px rgba(0,255,0,0.6)}
 
   .hand{position:absolute;display:flex;justify-content:center;align-items:flex-end;flex-wrap:nowrap}
-  #hand0{bottom:2vh;left:50%;transform:translateX(-50%);gap:0.6vmin;padding:0 2vmin;height:22vh}
-  #hand1{top:4vh;right:4vw;flex-direction:column;gap:0.6vmin}
-  #hand2{top:4vh;left:50%;transform:translateX(-50%);gap:0.6vmin}
-  #hand3{top:4vh;left:4vw;flex-direction:column;gap:0.6vmin}
+  #hand0{bottom:2vh;left:50%;transform:translateX(-50%);gap:0.7vmin;padding:0 3vmin;height:24vh}
+  #hand1{top:4vh;right:4vw;flex-direction:column;gap:0.7vmin}
+  #hand2{top:4vh;left:50%;transform:translateX(-50%);gap:0.7vmin}
+  #hand3{top:4vh;left:4vw;flex-direction:column;gap:0.7vmin}
 
-  .card{width:8.2vmin;height:11.8vmin;background:#fff;color:#000;border-radius:10px;
+  .card{
+    width:8.5vmin;height:12.2vmin;background:#fff;color:#000;border-radius:10px;
     border:3px solid #000;box-shadow:0 8px 25px rgba(0,0,0,0.8);cursor:pointer;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    font-weight:bold;transition:all .3s;position:relative;overflow:hidden}
+    font-weight:bold;transition:all .3s;position:relative;overflow:hidden;
+    flex-shrink:0;
+  }
   .card.he{color:#d50000}
-  .card.selected{transform:translateY(-10vh);box-shadow:0 60px 100px gold;z-index:99}
-  .card .rank{font-size:2.8vmin}
-  .card .suit{font-size:4.8vmin}
+  .card.selected{transform:translateY(-11vh)!important;box-shadow:0 60px 100px gold;z-index:99}
+  .card .rank{font-size:2.9vmin}
+  .card .suit{font-size:5vmin}
   .card.back{background:#0a3d1a;border:4px solid #ffd700;
     background-image:repeating-linear-gradient(45deg,#0a3d1a 0,#104d22 10px,#0a3d1a 20px)}
   .card.back::after{content:"CHÍ DŨNG";position:absolute;bottom:4px;right:4px;
     font-size:1.4vmin;color:#ffd700;font-weight:900}
 
-  #playedArea{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:80vmin;height:45vmin;display:flex;flex-wrap:wrap;gap:4vmin;
-    justify-content:center;align-items:center;padding:20px;overflow:hidden}
+  #playedArea{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:82vmin;height:46vmin;display:flex;flex-wrap:wrap;gap:5vmin;
+    justify-content:center;align-items:center;padding:20px;overflow:hidden;
+  }
 
-  /* ĐÃ SỬA DỨT ĐIỂM – BÀI ĐÁNH LÊN BÀN HIỆN RÕ 100%, KHÔNG BỊ CHE */
+  /* ĐÃ SỬA HOÀN TOÀN – BÀI ĐÁNH LÊN BÀN HIỆN RÕ 100% CẢ PC & MOBILE */
   .played-card{
-    width:14vmin;height:19vmin;background:#fff;border-radius:14px;
-    border:5px solid #000;box-shadow:0 25px 60px rgba(0,0,0,0.9);
-    display:flex;flex-direction:column;align-items:center;justify-content:space-between;
-    padding:1.5vmin;font-weight:900;position:relative;z-index:1;
+    width:15vmin;height:21vmin;background:#fff;border-radius:15px;
+    border:5px solid #000;box-shadow:0 30px 70px rgba(0,0,0,0.9);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-weight:900;position:relative;z-index:2;
     transform:rotate(var(--r,0deg));
     transition:all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
   .played-card.he{color:#d50000}
-  .played-card .rank{
-    font-size:7vmin;line-height:1;margin-top:1vmin;
-  }
-  .played-card .suit{
-    font-size:9vmin;line-height:1;
-  }
-  .played-card .rank.small{font-size:5.5vmin} /* cho 10 */
+  .played-card .rank{font-size:8vmin;line-height:1}
+  .played-card .suit{font-size:10vmin;margin-top:-1vmin}
 
   .name{position:absolute;font-size:2.8vmin;font-weight:900;text-shadow:0 0 15px gold}
   #name0{bottom:18vh;left:50%;transform:translateX(-50%)}
@@ -77,33 +76,37 @@
   #name3{top:12vh;left:6vw}
 
   #status{position:absolute;top:2vh;left:50%;transform:translateX(-50%);
-    font-size:3.8vmin;font-weight:bold;color:#ffd700}
+    font-size:4vmin;font-weight:bold;color:#ffd700}
 
   #readyBtn{position:absolute;bottom:12vh;left:50%;transform:translateX(-50%);
     padding:2.5vh 12vw;background:#d50000;color:#fff;font-size:4.5vmin;border:none;
-    border-radius:50px;font-weight:900;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,0.8)}
+    border-radius:50px;font-weight:900;cursor:pointer}
   #readyBtn.ready{background:#00c853}
 
   #startGameBtn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     padding:4vh 14vw;background:#ffeb3b;color:#d50000;font-size:5.5vmin;font-weight:900;
-    border:none;border-radius:60px;cursor:pointer;box-shadow:0 20px 60px rgba(255,235,59,0.8);
-    animation:pulse 2s infinite;z-index:99;display:none}
-  @keyframes pulse{0%{box-shadow:0 20px 60px rgba(255,235,59,0.8)}
-                    50%{box-shadow:0 20px 90px rgba(255,235,59,1)}}
+    border:none;border-radius:60px;cursor:pointer;animation:pulse 2s infinite;z-index:99;display:none}
+  @keyframes pulse{0%,100%{box-shadow:0 20px 60px rgba(255,235,59,0.8)}50%{box-shadow:0 20px 90px rgba(255,235,59,1)}}
 
-  .controls{position:absolute;bottom:2vh;left:50%;transform:translateX(-50%);display:flex;gap:5vw}
-  .controls button{padding:2.5vh 10vw;background:#ffd700;color:#000;font-size:4vmin;
+  .controls{position:absolute;bottom:2vh;left:50%;transform:translateX(-50%);display:flex;gap:6vw}
+  .controls button{padding:2.5vh 11vw;background:#ffd700;color:#000;font-size:4.2vmin;
     font-weight:900;border:none;border-radius:50px;cursor:pointer;
     box-shadow:0 10px 30px rgba(0,0,0,0.7)}
   .controls button:disabled{opacity:0.5}
 
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
 
+  /* FIX MOBILE HOÀN TOÀN */
   @media (max-width:768px){
-    .played-card{width:11vmin;height:15vmin;padding:1vmin}
-    .played-card .rank{font-size:5.5vmin}
-    .played-card .suit{font-size:7vmin}
-    .played-card .rank.small{font-size:4.5vmin}
+    #hand0{gap:0.4vmin !important;padding:0 1vmin;height:21vh}
+    .card{width:8vmin;height:11.5vmin;flex-shrink:0}
+    .card .rank{font-size:2.6vmin}
+    .card .suit{font-size:4.5vmin}
+    .card.selected{transform:translateY(-9vh)!important}
+    .played-card{width:12vmin;height:17vmin}
+    .played-card .rank{font-size:6.5vmin}
+    .played-card .suit{font-size:8vmin}
+    #playedArea{gap:3vmin;width:90vmin;height:50vmin}
   }
 </style>
 </head>
@@ -114,7 +117,7 @@
 
 <div id="joinForm">
   <h1>CHÍ DŨNG CLUB</h1>
-  <input type="text" id="roomId" placeholder="ID phòng (ví dụ: 123)" value="123">
+  <input type="text" id="roomId" placeholder="ID phòng" value="123">
   <input type="text" id="playerName" placeholder="Tên anh em">
   <button onclick="joinRoom()">VÀO PHÒNG NGAY</button>
 </div>
@@ -149,7 +152,8 @@ function joinRoom(){
 
 function startGame(){socket.emit('startGame',{roomId});}
 
-socket.on('youJoined',d=>{myIndex=d.myIndex;
+socket.on('youJoined',d=>{
+  myIndex=d.myIndex;
   document.getElementById('joinForm').style.display='none';
   document.getElementById('gameArea').style.display='block';
   document.getElementById('readyBtn').style.display='block';
@@ -182,24 +186,23 @@ socket.on('gameOver',d=>{
 
 socket.on('updateCardsLeft',d=>{cardsLeft=d.cardsLeft;renderHands();});
 
-// ĐÃ SỬA DỨT ĐIỂM – BÀI ĐÁNH LÊN BÀN HIỆN RÕ 100%
+// SỬA DỨT ĐIỂM – BÀI ĐÁNH LÊN BÀN HIỆN RÕ 100%
 socket.on('cardsPlayed',d=>{
   const area=document.getElementById('playedArea'); area.innerHTML='';
   d.cards.forEach((c,i)=>{
     const el=document.createElement('div');
     el.className='played-card'+(c.includes('H')||c.includes('D')?' he':'');
-    const rot=Math.random()*40-20; el.style.setProperty('--r',rot+'deg');
+    const rot=Math.random()*40-20;
+    el.style.setProperty('--r',rot+'deg');
     const rank=c.slice(0,-1)==='10'?'10':c.slice(0,-1);
-    const isTen=rank==='10';
-    el.innerHTML=`
-      <div class="rank${isTen?' small':''}">${rank}</div>
-      <div class="suit">${suitSymbol[c.slice(-1)]}</div>
-    `;
-    el.style.opacity='0'; el.style.transform=`translateY(200px) scale(0.3)`;
+    el.innerHTML=`<div class="rank">${rank}</div><div class="suit">${suitSymbol[c.slice(-1)]}</div>`;
+    el.style.opacity='0';
+    el.style.transform='translateY(200px) scale(0.3)';
     area.appendChild(el);
     setTimeout(()=>{el.style.transition='all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-      el.style.opacity='1'; el.style.transform=`translateY(0) rotate(${rot}deg) scale(1)`;
-    },i*100);
+      el.style.opacity='1';
+      el.style.transform=`translateY(0) rotate(${rot}deg) scale(1)`;
+    },i*120);
   });
   if(d.playerIndex===myIndex){hand=hand.filter(x=>!d.cards.includes(x)); selected=[]; renderHands();}
   updateTurn();
@@ -210,7 +213,6 @@ socket.on('turnChanged',d=>{currentTurn=d.currentTurn;updateTurn();});
 function toggleReady(){socket.emit('toggleReady',{roomId});}
 function leaveRoom(){if(confirm('Thoát phòng?')){socket.emit('leaveRoom',{roomId});location.reload();}}
 function skipTurn(){if(myIndex===currentTurn)socket.emit('skipTurn',{roomId});}
-
 function playSelected(){
   if(selected.length&&myIndex===currentTurn){
     socket.emit('playCards',{roomId,cards:selected});
@@ -219,9 +221,9 @@ function playSelected(){
 }
 
 function toggle(c){
-  selected=selected.includes(c)?selected.filter(x=>x!==c):[...selected,c];
+  if(selected.includes(c)) selected=selected.filter(x=>x!==c);
+  else selected.push(c);
   renderHands();
-  document.getElementById('playBtn').disabled=selected.length===0||myIndex!==currentTurn;
 }
 
 function updateReadyButton(){
@@ -235,14 +237,17 @@ function updateReadyButton(){
 function renderHands(){
   document.getElementById('hand0').innerHTML=hand.map(c=>{
     const rank=c.slice(0,-1)==='10'?'10':c.slice(0,-1);
-    const suit=c.slice(-1); const red=(suit==='H'||suit==='D')?'he':'';
+    const suit=c.slice(-1);
+    const red=(suit==='H'||suit==='D')?'he':'';
     const sel=selected.includes(c)?' selected':'';
     return `<div class="card ${red}${sel}" onclick="toggle('${c}')">
-      <div class="rank">${rank}</div><div class="suit">${suitSymbol[suit]}</div>
+      <div class="rank">${rank}</div>
+      <div class="suit">${suitSymbol[suit]}</div>
     </div>`;
   }).join('');
+
   for(let i=1;i<=3;i++){
-    const cnt=gameStarted?cardsLeft[(myIndex+i)%4]:0;
+    const cnt=gameStarted?cardsLeft[(myIndex+i)%4]||0:0;
     document.getElementById(`hand${i}`).innerHTML=Array(cnt).fill('<div class="card back"></div>').join('');
   }
 }
