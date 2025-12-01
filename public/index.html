@@ -20,8 +20,8 @@
   #joinForm h1{font-size:72px;color:#ffd700;text-shadow:0 0 40px gold;margin-bottom:50px}
   input,#joinForm button{width:100%;padding:18px 20px;margin:12px 0;display:block;
     border-radius:30px;border:none;font-size:22px}
-  input{background:#fff;color:#000;outline:none;border-radius:30px}
-  #joinForm button{background:#ffd700;color:#000;font-weight:900;cursor:pointer;border-radius:30px}
+  input{background:#fff;color:#000;outline:none}
+  #joinForm button{background:#ffd700;color:#000;font-weight:900;cursor:pointer}
 
   #gameArea{display:none;width:100vw;height:100vh;position:relative;
     background:radial-gradient(circle at center,#0a3d1a 0%,#000 70%)}
@@ -63,7 +63,7 @@
   }
   .played-card.he{color:#d50000}
   .played-card .rank{font-size:6.5vmin}
-  .played-card .suit{font-size:8vmin;position:absolute}
+  .played-card .suit{font-size:8vmin}
 
   .name{position:absolute;font-size:2.8vmin;font-weight:900;text-shadow:0 0 15px gold}
   #name0{bottom:18vh;left:50%;transform:translateX(-50%)}
@@ -98,8 +98,6 @@
     #leaveBtn{top:8px;right:8px;padding:8px 16px;font-size:15px}
     #status{font-size:18px;top:6px}
     .card{width:7.6vmin;height:10.9vmin}
-    .card .rank{font-size:2.4vmin}
-    .card .suit{font-size:4.1vmin}
     .played-card{width:11vmin;height:15vmin}
     .played-card .rank{font-size:5.5vmin}
     .played-card .suit{font-size:7vmin}
@@ -111,15 +109,17 @@
 <div class="logo">CHÍ DŨNG CLUB</div>
 <button id="leaveBtn" onclick="leaveRoom()">THOÁT PHÒNG</button>
 
+<!-- MÀN HÌNH VÀO PHÒNG -->
 <div id="joinForm">
   <h1>CHÍ DŨNG CLUB</h1>
-  <input type="text" id="roomId" placeholder="ID phòng (ví dụ: 12397)" value="">
-  <input type="text" id="playerName" placeholder="Tên anh em">
+  <input type="text" id="roomId" placeholder="Nhập ID phòng (ví dụ: 123, 999...)" value="123">
+  <input type="text" id="playerName" placeholder="Tên anh em (không bắt buộc)">
   <button onclick="joinRoom()">VÀO PHÒNG NGAY</button>
 </div>
 
+<!-- MÀN HÌNH CHƠI -->
 <div id="gameArea">
-  <div id="status">Đang tải...</div>
+  <div id="status">Đang kết nối...</div>
   <div class="table">
     <div id="name2" class="name"></div><div id="hand2" class="hand"></div>
     <div id="name1" class="name"></div><div id="hand1" class="hand"></div>
@@ -136,75 +136,74 @@
 </div>
 
 <script>
-let hand=[],selected=[],myIndex=-1,currentTurn=-1,roomId='',players=[],readyList=[],gameStarted=false,cardsLeft=[];
-const socket=io();
-const suitSymbol = {S:'Spade', H:'Heart', D:'Diamond', C:'Club'};
+// === BIẾN TOÀN CỤC ===
+let hand = [], selected = [], myIndex = -1, currentTurn = -1;
+let roomId = '123'; // mặc định
+let players = [], readyList = [], gameStarted = false, cardsLeft = [];
+const socket = io();
+const suitSymbol = { S:'♠', H:'♥', D:'♦', C:'♣' };
 
-function getCardHTML(c){
-  const rank = c.slice(0,-1)==='10'?'10':c.slice(0,-1);
-  const suit = c.slice(-1);
-  const red = (suit==='H'||suit==='D')?'he':'';
-  const sel = selected.includes(c)?'selected':'';
-  return `<div class="card ${red} ${sel}" onclick="toggle('${c}')">
-    <div class="rank">${rank}</div>
-    <div class="suit">${suitSymbol[suit]}</div>
-  </div>`;
+// === VÀO PHÒNG – ĐÃ SỬA HOÀN TOÀN, KHÔNG CÒN LỖI ===
+function joinRoom() {
+  const inputRoom = document.getElementById('roomId').value.trim();
+  roomId = inputRoom || '123'; // nếu trống thì mặc định 123
+  const name = document.getElementById('playerName').value.trim() || 'Anh Em';
+  
+  socket.emit('joinRoom', { roomId, playerName: name });
 }
 
-// ĐÃ SỬA LỖI: KHÔNG CỐ ĐỊNH roomId NỮA
-function joinRoom(){
-  roomId = document.getElementById('roomId').value.trim();
-  if(!roomId) roomId = '123'; // mặc định nếu để trống
-  const name = document.getElementById('playerName').value.trim()||'Anh Em';
-  socket.emit('joinRoom',{roomId,playerName:name});
-}
-
-function startGame(){
-  socket.emit('startGame', {roomId});
-}
-
-// Tất cả các socket.on giữ nguyên như trước, chỉ sửa đúng 1 chỗ quan trọng ở trên
+// === CÁC SỰ KIỆN SOCKET ===
 socket.on('youJoined', d => {
   myIndex = d.myIndex;
-  document.getElementById('joinForm').style.display='none';
-  document.getElementById('gameArea').style.display='block';
-  document.getElementById('readyBtn').style.display='block';
-  document.getElementById('leaveBtn').style.display='block';
-  document.getElementById('status').innerHTML=`Phòng ${roomId} • Đang chờ anh em...`;
+  document.getElementById('joinForm').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'block';
+  document.getElementById('readyBtn').style.display = 'block';
+  document.getElementById('leaveBtn').style.display = 'block';
+  document.getElementById('status').innerHTML = `Phòng ${roomId} • Đã vào thành công!`;
 });
 
-socket.on('roomUpdate',d=>{
-  players=d.names||[]; readyList=d.ready||[];
-  document.getElementById('status').innerHTML=`Phòng ${roomId} • ${d.count}/4 anh em`;
-  updateNames(); updateReadyButton(); renderHands();
+socket.on('roomUpdate', d => {
+  players = d.names || [];
+  readyList = d.ready || [];
+  document.getElementById('status').innerHTML = `Phòng ${roomId} • ${d.count}/4 anh em`;
+  updateNames();
+  updateReadyButton();
+  renderHands();
   checkShowStartButton(d.count);
 });
 
-function checkShowStartButton(playerCount){
-  const allReady = playerCount >= 2 && readyList.length === playerCount;
-  const isFirstPlayer = myIndex === 0;
+function checkShowStartButton(count) {
+  const allReady = count >= 2 && readyList.length === count;
+  const isFirst = myIndex === 0;
   document.getElementById('startGameBtn').style.display = 
-    (!gameStarted && allReady && isFirstPlayer) ? 'block' : 'none';
+    (!gameStarted && allReady && isFirst) ? 'block' : 'none';
 }
 
-socket.on('gameStarted',d=>{
-  gameStarted=true; hand=d.hand||[]; currentTurn=d.currentTurn; selected=[];
-  document.getElementById('readyBtn').style.display='none';
-  document.getElementById('startGameBtn').style.display='none';
-  document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';
-  renderHands(); updateTurn();
+socket.on('gameStarted', d => {
+  gameStarted = true;
+  hand = d.hand || [];
+  currentTurn = d.currentTurn;
+  selected = [];
+  document.getElementById('readyBtn').style.display = 'none';
+  document.getElementById('startGameBtn').style.display = 'none';
+  document.getElementById('playedArea').innerHTML = '<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';
+  renderHands();
+  updateTurn();
 });
 
 socket.on('gameOver', d => {
-  document.getElementById('playedArea').innerHTML=`<div style="color:#ffd700;font-size:10vmin">CHÚC MỪNG ${d.winner} THẮNG!</div>`;
-  hand=[];selected=[];gameStarted=false;
-  document.getElementById('readyBtn').style.display='block';
-  document.getElementById('readyBtn').innerText='SẴN SÀNG';
+  document.getElementById('playedArea').innerHTML = `<div style="color:#ffd700;font-size:10vmin">CHÚC MỪNG ${d.winner} THẮNG!</div>`;
+  hand = []; selected = []; gameStarted = false;
+  document.getElementById('readyBtn').style.display = 'block';
+  document.getElementById('readyBtn').innerText = 'SẴN SÀNG';
   document.getElementById('readyBtn').classList.remove('ready');
-  setTimeout(()=>{document.getElementById('playedArea').innerHTML='<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';checkShowStartButton(players.length);},5000);
+  setTimeout(() => {
+    document.getElementById('playedArea').innerHTML = '<div style="color:#999;font-size:6vmin">Bàn bài trống</div>';
+    checkShowStartButton(players.length);
+  }, 5000);
 });
 
-socket.on('updateCardsLeft',d=>{cardsLeft=d.cardsLeft;renderHands();});
+socket.on('updateCardsLeft', d => { cardsLeft = d.cardsLeft; renderHands(); });
 
 socket.on('cardsPlayed', d => {
   const area = document.getElementById('playedArea');
@@ -215,25 +214,22 @@ socket.on('cardsPlayed', d => {
     el.className = 'played-card';
     if (c.includes('H') || c.includes('D')) el.classList.add('he');
 
-    const rotate = Math.random() * 40 - 20;
-    el.style.setProperty('--r', rotate + 'deg');
+    const rot = Math.random() * 40 - 20;
+    el.style.setProperty('--r', rot + 'deg');
 
     const rank = c.slice(0, -1) === '10' ? '10' : c.slice(0, -1);
     const suit = c.slice(-1);
 
-    el.innerHTML = `
-      <div class="rank">${rank}</div>
-      <div class="suit">${suitSymbol[suit]}</div>
-    `;
+    el.innerHTML = `<div class="rank">${rank}</div><div class="suit">${suitSymbol[suit]}</div>`;
 
     el.style.opacity = '0';
-    el.style.transform = `translateY(150px) rotate(${rotate}deg) scale(0.2)`;
+    el.style.transform = `translateY(150px) scale(0.2)`;
     area.appendChild(el);
 
     setTimeout(() => {
       el.style.transition = 'all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
       el.style.opacity = '1';
-      el.style.transform = `translateY(0) rotate(${rotate}deg) scale(1)`;
+      el.style.transform = `translateY(0) rotate(${rot}deg) scale(1)`;
     }, i * 120);
   });
 
@@ -242,66 +238,75 @@ socket.on('cardsPlayed', d => {
     selected = [];
     renderHands();
   }
-
   updateTurn();
 });
 
-socket.on('turnChanged',d=>{currentTurn=d.currentTurn;updateTurn();});
+socket.on('turnChanged', d => { currentTurn = d.currentTurn; updateTurn(); });
 
-function toggleReady(){socket.emit('toggleReady',{roomId});}
-function leaveRoom(){if(confirm('Thoát khỏi phòng này?')){socket.emit('leaveRoom',{roomId});location.reload();}}
+// === CÁC HÀM KHÁC ===
+function startGame() { socket.emit('startGame', { roomId }); }
+function toggleReady() { socket.emit('toggleReady', { roomId }); }
+function leaveRoom() { if(confirm('Thoát phòng?')) { socket.emit('leaveRoom', { roomId }); location.reload(); } }
+function skipTurn() { if(myIndex === currentTurn) socket.emit('skipTurn', { roomId }); }
 
-function updateReadyButton(){
-  if(gameStarted)return;
-  const b=document.getElementById('readyBtn');
-  const r=readyList.includes(myIndex);
-  b.innerText=r?'HỦY SẴN SÀNG':'SẴN SÀNG';
-  b.classList.toggle('ready',r);
-}
-
-function renderHands(){
-  document.getElementById('hand0').innerHTML=hand.map(getCardHTML).join('');
-  for(let i=1;i<=3;i++){
-    const cnt=gameStarted?cardsLeft[(myIndex+i)%4]:0;
-    document.getElementById(`hand${i}`).innerHTML=Array(cnt).fill('<div class="card back"></div>').join('');
+function playSelected() {
+  if (selected.length && myIndex === currentTurn) {
+    socket.emit('playCards', { roomId, cards: selected });
+    selected = [];
+    renderHands();
   }
 }
 
-function updateNames(){
-  for(let i=0;i<4;i++){
-    const e=document.getElementById(`name${i}`);
-    e.innerText=i===myIndex?'Bạn':(players[i]||'Đang chờ...');
-    if(readyList.includes(i) && !gameStarted) e.innerText+=' Ready';
-    e.style.color=i===currentTurn?'#ff1744':'#ffd700';
-  }
-}
-
-function toggle(c){
-  selected=selected.includes(c)?selected.filter(x=>x!==c):[...selected,c];
+function toggle(c) {
+  selected = selected.includes(c) ? selected.filter(x => x !== c) : [...selected, c];
   renderHands();
-  document.getElementById('playBtn').disabled=selected.length===0||myIndex!==currentTurn;
+  document.getElementById('playBtn').disabled = selected.length === 0 || myIndex !== currentTurn;
 }
 
-function playSelected(){
-  if(selected.length && myIndex===currentTurn){
-    socket.emit('playCards',{roomId,cards:selected});
-    selected=[];renderHands();
+function updateReadyButton() {
+  if (gameStarted) return;
+  const b = document.getElementById('readyBtn');
+  const ready = readyList.includes(myIndex);
+  b.innerText = ready ? 'HỦY SẴN SÀNG' : 'SẴN SÀNG';
+  b.classList.toggle('ready', ready);
+}
+
+function renderHands() {
+  document.getElementById('hand0').innerHTML = hand.map(c => {
+    const rank = c.slice(0,-1)==='10'?'10':c.slice(0,-1);
+    const suit = c.slice(-1);
+    const red = (suit==='H'||suit==='D')?'he':'';
+    const sel = selected.includes(c)?' selected':'';
+    return `<div class="card ${red}${sel}" onclick="toggle('${c}')">
+      <div class="rank">${rank}</div>
+      <div class="suit">${suitSymbol[suit]}</div>
+    </div>`;
+  }).join('');
+
+  for (let i = 1; i <= 3; i++) {
+    const cnt = gameStarted ? cardsLeft[(myIndex + i) % 4] : 0;
+    document.getElementById(`hand${i}`).innerHTML = Array(cnt).fill('<div class="card back"></div>').join('');
   }
 }
 
-function skipTurn(){
-  if(myIndex===currentTurn) socket.emit('skipTurn',{roomId});
+function updateNames() {
+  for (let i = 0; i < 4; i++) {
+    const e = document.getElementById(`name${i}`);
+    e.innerText = i === myIndex ? 'Bạn' : (players[i] || 'Đang chờ...');
+    if (!gameStarted && readyList.includes(i)) e.innerText += ' Ready';
+    e.style.color = i === currentTurn ? '#ff1744' : '#ffd700';
+  }
 }
 
-function updateTurn(){
-  const playerName = players[currentTurn] || '???';
-  document.getElementById('status').innerHTML = myIndex===currentTurn
+function updateTurn() {
+  const name = players[currentTurn] || '???';
+  document.getElementById('status').innerHTML = myIndex === currentTurn
     ? '<span style="color:#ff1744;font-size:6vmin;animation:blink 1s infinite">ĐẾN LƯỢT BẠN!</span>'
-    : `<strong style="color:#ffd700">${playerName} đang đánh...</strong>';
+    : `<strong style="color:#ffd700">${name} đang đánh...</strong>`;
 
-  const my=myIndex===currentTurn;
-  document.getElementById('playBtn').disabled=!my||selected.length===0;
-  document.getElementById('skipBtn').disabled=!my;
+  const myTurn = myIndex === currentTurn;
+  document.getElementById('playBtn').disabled = !myTurn || selected.length === 0;
+  document.getElementById('skipBtn').disabled = !myTurn;
 }
 </script>
 </body>
